@@ -3,784 +3,579 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Instrumen Falak Pro - Stellarium Sync V2</title>
+    <title>AstroCam AR - Find The Sun & Moon</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap');
+        body { margin: 0; overflow: hidden; background-color: #000; color: #00ffcc; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 10; pointer-events: none; }
+        #video-feed { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+        .hud-container { position: absolute; width: 100%; height: 100%; z-index: 20; pointer-events: none; }
         
-        body {
-            font-family: 'JetBrains Mono', monospace;
-            background-color: #000;
-            color: #fff;
-            overflow: hidden;
-            touch-action: none; /* Mencegah pull-to-refresh pada mobile */
+        /* UI Elements */
+        .top-bar { position: absolute; top: 0; left: 0; width: 100%; padding: 10px; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); display: flex; justify-content: space-between; align-items: flex-start; pointer-events: auto; }
+        .bottom-controls { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px; padding-bottom: 40px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: auto; }
+        
+        .data-box { background: rgba(0, 20, 0, 0.5); border: 1px solid #00ffcc; padding: 5px 10px; border-radius: 4px; font-size: 12px; text-shadow: 0 0 5px #00ffcc; margin-bottom: 5px; }
+        
+        .btn-action { 
+            background: rgba(0, 50, 50, 0.6); border: 1px solid #00ffcc; color: #00ffcc; 
+            padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; 
+            text-transform: uppercase; transition: 0.3s; font-size: 14px;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
+            pointer-events: auto;
         }
+        .btn-action:active, .btn-action.active { background: #00ffcc; color: #000; box-shadow: 0 0 20px #00ffcc; }
+        
+        .shutter-btn {
+            width: 70px; height: 70px; border-radius: 50%; border: 3px solid #fff;
+            background: rgba(255,255,255,0.2); cursor: pointer; pointer-events: auto;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .shutter-btn:active { background: rgba(255,255,255,0.8); }
 
-        /* Scanline Effect */
-        .scanline {
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
-            background-size: 100% 4px;
-            pointer-events: none;
+        .voice-btn-container {
+            display: flex; flex-direction: column; align-items: center; margin-bottom: 10px;
         }
+        .voice-label {
+            font-size: 10px; color: #fff; margin-top: 4px; text-shadow: 0 0 2px black;
+            opacity: 0.8; letter-spacing: 1px;
+        }
+        .mic-btn {
+            width: 40px; height: 40px; border-radius: 50%; border: 1px solid #00ffcc;
+            background: rgba(0,0,0,0.5); color: #00ffcc; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; pointer-events: auto; transition: 0.3s;
+        }
+        .mic-btn.listening { background: #ff3333; border-color: #ff3333; color: white; animation: pulse 1.5s infinite; }
 
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
-        }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 51, 51, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0); } }
 
-        /* Styling Slider */
-        input[type=range] {
-            -webkit-appearance: none;
-            background: transparent;
+        /* Guide Arrows */
+        .guide-arrow {
+            position: absolute; width: 0; height: 0; 
+            border-left: 15px solid transparent; border-right: 15px solid transparent;
+            z-index: 15; opacity: 0; transition: opacity 0.3s; pointer-events: none;
         }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: #f59e0b;
-            border: 2px solid white;
-            cursor: pointer;
-            margin-top: -8px;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            cursor: pointer;
-            background: rgba(255,255,255,0.2);
-            border-radius: 2px;
-        }
+        .guide-arrow.up { border-bottom: 25px solid #ffcc00; top: 20%; left: 50%; transform: translateX(-50%); }
+        .guide-arrow.down { border-top: 25px solid #ffcc00; bottom: 20%; left: 50%; transform: translateX(-50%); }
+        .guide-arrow.left { border-right: 25px solid #ffcc00; left: 10%; top: 50%; transform: translateY(-50%); }
+        .guide-arrow.right { border-left: 25px solid #ffcc00; right: 10%; top: 50%; transform: translateY(-50%); }
 
-        /* Scale Container */
-        .scale-container {
-            will-change: transform; /* Optimasi performa render */
+        #permission-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; p: 20px;
         }
     </style>
 </head>
-<body class="bg-black text-white">
+<body>
 
-    <!-- Hidden Inputs for Pickers -->
-    <input type="datetime-local" id="date-picker-input" class="absolute top-0 left-0 opacity-0 pointer-events-none">
+    <!-- Permission Modal -->
+    <div id="permission-modal">
+        <h2 class="text-2xl text-cyan-400 mb-4"><i class="fas fa-satellite-dish"></i> AstroCam AR</h2>
+        <p class="text-gray-300 mb-6 max-w-md px-4">Izinkan akses Kamera dan Sensor Orientasi untuk menggunakan fitur AR dan kompas astronomi.</p>
+        <button onclick="startApp()" class="btn-action" style="font-size: 18px; padding: 15px 40px;">MULAI / KALIBRASI</button>
+    </div>
 
-    <div id="app" class="relative w-full h-screen overflow-hidden">
-        
-        <!-- Layer 1: Kamera -->
-        <video id="video" autoplay playsinline class="absolute inset-0 w-full h-full object-cover opacity-60 z-0"></video>
-        
-        <!-- Layer 2: Canvas AR (Benda Langit) -->
-        <canvas id="ar-canvas" class="absolute inset-0 z-10 pointer-events-none"></canvas>
-        
-        <!-- Layer 3: Scanline & Vignette -->
-        <div class="absolute inset-0 scanline z-20 opacity-50"></div>
-        <div class="absolute inset-0 bg-radial-gradient z-20 pointer-events-none" style="background: radial-gradient(circle, transparent 60%, black 100%);"></div>
+    <!-- Video Background -->
+    <video id="video-feed" autoplay playsinline muted></video>
 
-        <!-- Layer 4: HUD Elements -->
+    <!-- AR Canvas Layer -->
+    <canvas id="ar-canvas"></canvas>
 
-        <!-- Crosshair Tengah -->
-        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-            <div class="relative flex items-center justify-center">
-                <div class="w-12 h-12 border-2 border-yellow-500/50 rounded-full"></div>
-                <div class="absolute w-[80px] h-[1px] bg-yellow-500/80"></div>
-                <div class="absolute h-[80px] w-[1px] bg-yellow-500/80"></div>
-                <div class="absolute w-2 h-2 bg-red-500 rounded-full"></div>
+    <!-- Guide Arrows (Visual cues to turn phone) -->
+    <div id="arrow-up" class="guide-arrow up"></div>
+    <div id="arrow-down" class="guide-arrow down"></div>
+    <div id="arrow-left" class="guide-arrow left"></div>
+    <div id="arrow-right" class="guide-arrow right"></div>
+
+    <!-- HUD Container -->
+    <div class="hud-container">
+        <!-- Top Info -->
+        <div class="top-bar">
+            <div>
+                <div class="data-box" id="coords">Lat: -- Lon: --</div>
+                <div class="data-box" id="orientation">Az: 0° | Alt: 0°</div>
+            </div>
+            <div class="text-right">
+                <div class="data-box text-yellow-400" id="sun-data">Sun: --</div>
+                <div class="data-box text-gray-300" id="moon-data">Moon: --</div>
             </div>
         </div>
 
-        <!-- Skala Azimut (Horizontal) -->
-        <div class="absolute top-1/2 left-0 w-full h-16 -mt-24 pointer-events-none z-20 overflow-hidden">
-            <!-- Container skala yang digerakkan -->
-            <div id="hud-az-scale" class="scale-container absolute top-0 left-0 h-full flex items-end whitespace-nowrap">
-                <!-- Digenerate via JS -->
-            </div>
-            <!-- Indikator Tengah -->
-            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[8px] border-b-yellow-500"></div>
-            <div class="absolute bottom-2 left-1/2 -translate-x-1/2 text-yellow-500 text-[10px] font-bold tracking-widest bg-black/50 px-1 rounded" id="az-value-display">0°</div>
-        </div>
+        <!-- Center Crosshair (Static HTML fallback if canvas fails, but we draw on canvas usually) -->
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width: 40px; height: 40px; border: 1px solid rgba(0,255,204,0.3); pointer-events:none;"></div>
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width: 4px; height: 4px; background: #ff3333; border-radius:50%; pointer-events:none;"></div>
 
-        <!-- Skala Altitude (Vertikal) -->
-        <div class="absolute top-0 left-1/2 h-full w-16 -ml-32 pointer-events-none z-20 overflow-hidden">
-             <!-- Container skala yang digerakkan -->
-            <div id="hud-alt-scale" class="scale-container absolute top-0 left-0 w-full flex flex-col items-end pt-[50vh]">
-                <!-- Digenerate via JS -->
-            </div>
-             <!-- Indikator Tengah -->
-            <div class="absolute top-1/2 -translate-y-1/2 right-0 w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[8px] border-r-yellow-500"></div>
-            <div class="absolute top-1/2 left-2 -translate-y-1/2 text-yellow-500 text-[10px] font-bold tracking-widest bg-black/50 px-1 rounded" id="alt-value-display">0°</div>
-        </div>
-
-        <!-- Header Info (Jam & Lokasi) -->
-        <div class="absolute top-6 left-0 w-full flex flex-col items-center z-40 pointer-events-none">
-            <div id="clock-display" class="text-3xl font-black tracking-[0.2em] text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">00:00:00</div>
-            <div class="flex gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1 bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">
-                <span id="date-display">-- --- ----</span>
-                <span class="text-yellow-600">|</span>
-                <span id="loc-display">GPS: ---</span>
-            </div>
-        </div>
-
-        <!-- Info Panels (Kiri & Kanan) -->
-        <div class="absolute top-28 left-4 z-40 w-40 pointer-events-none">
-            <div class="glass-panel p-3 rounded-xl border-l-4 border-l-orange-500">
-                <div class="flex items-center gap-2 mb-2 pb-1 border-b border-white/10">
-                    <i data-lucide="sun" class="w-4 h-4 text-orange-400"></i>
-                    <span class="text-[10px] font-bold text-orange-400">MATAHARI</span>
-                </div>
-                <div class="space-y-1 text-[9px] font-mono text-gray-300">
-                    <div class="flex justify-between"><span>AZ:</span> <span id="sun-az" class="text-white font-bold">---</span></div>
-                    <div class="flex justify-between"><span>ALT:</span> <span id="sun-alt" class="text-white font-bold">---</span></div>
-                    <div class="flex justify-between"><span>RA:</span> <span id="sun-ra">---</span></div>
-                    <div class="flex justify-between"><span>DEC:</span> <span id="sun-dec">---</span></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="absolute top-28 right-4 z-40 w-40 pointer-events-none">
-            <div class="glass-panel p-3 rounded-xl border-r-4 border-r-yellow-400">
-                <div class="flex items-center justify-end gap-2 mb-2 pb-1 border-b border-white/10">
-                    <span class="text-[10px] font-bold text-yellow-400">BULAN</span>
-                    <i data-lucide="moon" class="w-4 h-4 text-yellow-400"></i>
-                </div>
-                <div class="space-y-1 text-[9px] font-mono text-gray-300 text-right">
-                    <div class="flex justify-between"><span>AZ:</span> <span id="moon-az" class="text-white font-bold">---</span></div>
-                    <div class="flex justify-between"><span>ALT:</span> <span id="moon-alt" class="text-white font-bold">---</span></div>
-                    <div class="flex justify-between"><span>RA:</span> <span id="moon-ra">---</span></div>
-                    <div class="flex justify-between"><span>DEC:</span> <span id="moon-dec">---</span></div>
-                    <div class="flex justify-between text-yellow-200 mt-1"><span class="w-full text-[8px]" id="moon-phase">Phase: --%</span></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Notification Toast -->
-        <div id="toast" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 text-white px-6 py-3 rounded-lg text-xs font-bold tracking-widest hidden z-[60] border border-yellow-500/50">
-            MESSAGE
-        </div>
-
-        <!-- Controls Area (Bawah) -->
-        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 w-[94%] max-w-md z-50 flex flex-col gap-3">
+        <!-- Bottom Controls -->
+        <div class="bottom-controls">
             
-            <!-- Quick Tools -->
-            <div class="flex justify-between items-center px-1">
-                <!-- Group Kiri -->
-                <div class="flex gap-2">
-                    <button onclick="openDatePicker()" class="glass-panel w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-white/10 active:scale-95 transition-all">
-                        <i data-lucide="calendar" class="w-4 h-4"></i>
-                    </button>
-                    <button onclick="handleManualGps()" class="glass-panel px-4 h-10 rounded-full flex items-center justify-center gap-2 text-white hover:bg-white/10 active:scale-95 transition-all">
-                        <i data-lucide="map-pin" class="w-3 h-3 text-green-400"></i>
-                        <span class="text-[9px] font-bold uppercase" id="gps-btn-label">AUTO</span>
-                    </button>
-                </div>
-
-                <!-- Group Kanan (Targeting) -->
-                <div class="flex gap-2">
-                    <button id="btn-track-sun" onclick="toggleTrack('sun')" class="glass-panel px-3 h-10 rounded-full flex items-center gap-1 text-orange-400 hover:bg-orange-500/20 border-orange-500/30 active:scale-95 transition-all">
-                        <i data-lucide="crosshair" class="w-3 h-3"></i>
-                        <span class="text-[9px] font-bold">SUN</span>
-                    </button>
-                    <button id="btn-track-moon" onclick="toggleTrack('moon')" class="glass-panel px-3 h-10 rounded-full flex items-center gap-1 text-yellow-400 hover:bg-yellow-500/20 border-yellow-500/30 active:scale-95 transition-all">
-                        <i data-lucide="crosshair" class="w-3 h-3"></i>
-                        <span class="text-[9px] font-bold">MOON</span>
-                    </button>
-                </div>
+            <!-- Target Selection -->
+            <div class="flex gap-4 mb-4">
+                <button id="btn-sun" class="btn-action" onclick="toggleTarget('sun')"><i class="fas fa-sun"></i> FIND THE SUN</button>
+                <button id="btn-moon" class="btn-action" onclick="toggleTarget('moon')"><i class="fas fa-moon"></i> FIND THE MOON</button>
             </div>
 
-            <!-- Main Calibration & Time Control -->
-            <div class="glass-panel p-4 rounded-[24px]">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-[9px] text-gray-400 font-bold tracking-widest uppercase" id="mode-label">LIVE SENSOR</span>
-                    <button onclick="syncCompass()" class="bg-blue-600/30 border border-blue-500/50 text-blue-200 px-3 py-1 rounded text-[9px] font-bold flex items-center gap-1 active:scale-95 hover:bg-blue-600/50 transition-all">
-                        <i data-lucide="refresh-cw" class="w-3 h-3"></i> SYNC SUN
+            <!-- Voice & Shutter -->
+            <div class="flex items-center gap-6">
+                <!-- Voice Trigger -->
+                <div class="voice-btn-container">
+                    <button id="btn-voice" class="mic-btn" onclick="toggleVoice()">
+                        <i class="fas fa-microphone"></i>
                     </button>
+                    <span class="voice-label">KATAKAN "AMBIL"<br>UNTUK MEMOTRET</span>
                 </div>
 
-                <!-- Time Slider -->
-                <div class="flex items-center gap-3">
-                    <button onclick="shiftTime(-60)" class="text-gray-400 hover:text-white"><i data-lucide="minus" class="w-4 h-4"></i></button>
-                    <input type="range" id="time-slider" min="-720" max="720" value="0" class="flex-1">
-                    <button onclick="shiftTime(60)" class="text-gray-400 hover:text-white"><i data-lucide="plus" class="w-4 h-4"></i></button>
-                    <button onclick="resetTime()" class="w-8 h-8 rounded-full bg-red-500/20 border border-red-500/50 text-red-400 flex items-center justify-center hover:bg-red-500/40 active:scale-90 transition-all">
-                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
-                    </button>
-                </div>
+                <!-- Main Shutter -->
+                <button class="shutter-btn" onclick="takePhoto()">
+                    <div style="width: 50px; height: 50px; background: white; border-radius: 50%;"></div>
+                </button>
+                
+                <!-- Spacer for balance -->
+                <div style="width: 50px;"></div> 
             </div>
-
         </div>
-
-        <!-- Start Overlay (Permission) -->
-        <div id="start-screen" class="absolute inset-0 z-[100] bg-black flex flex-col items-center justify-center p-8 text-center">
-            <div class="w-20 h-20 rounded-full bg-yellow-500/10 flex items-center justify-center mb-6 animate-pulse">
-                <i data-lucide="compass" class="w-10 h-10 text-yellow-500"></i>
-            </div>
-            <h1 class="text-3xl font-black text-white mb-2 tracking-tight">FALAK PRO <span class="text-yellow-500">AR</span></h1>
-            <p class="text-gray-500 text-xs mb-8 max-w-[250px] leading-relaxed">Posisikan HP Anda menghadap Matahari untuk kalibrasi awal.</p>
-            <button onclick="startApp()" class="w-full max-w-xs py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-black font-black text-xs rounded-xl uppercase tracking-[0.2em] shadow-lg shadow-yellow-900/50 active:scale-95 transition-transform">
-                MULAI INSTRUMEN
-            </button>
-        </div>
-
     </div>
 
     <script>
         // --- State Management ---
         const state = {
-            isRunning: false,
-            lat: -6.200000,
-            lon: 106.816666,
-            gpsMode: 'auto', // 'auto' | 'manual'
-            currentTime: new Date(),
-            timeOffsetMinutes: 0,
-            isLive: true,
-            
-            // Sensor Data (Raw)
-            sensorAlpha: 0,
-            sensorBeta: 0,
-            sensorGamma: 0,
-
-            // Calibration Offsets
-            compassOffset: 0, // Selisih antara sensor utara & utara asli
-            
-            // Tracking Mode ('none', 'sun', 'moon')
-            trackingTarget: 'none',
-
-            // Astro Calculations (Updated every frame)
-            sun: { az: 0, alt: 0, ra: 0, dec: 0 },
-            moon: { az: 0, alt: 0, ra: 0, dec: 0, phase: 0 }
+            tracking: null, // 'sun' or 'moon' or null
+            azimuth: 0,     // Compass heading (0-360)
+            altitude: 0,    // Pitch (-90 to 90)
+            lat: -6.9175,   // Default (Bandung)
+            lon: 107.6191,
+            sunPos: { az: 0, alt: 0 },
+            moonPos: { az: 0, alt: 0 },
+            listening: false
         };
 
-        // --- Constants & Config ---
-        const PI = Math.PI;
-        const RAD = PI / 180;
-        const DEG = 180 / PI;
-        const PIXELS_PER_DEGREE_AZ = 15; // Jarak antar garis derajat horizontal
-        const PIXELS_PER_DEGREE_ALT = 15; // Jarak antar garis derajat vertikal
-        
         // --- DOM Elements ---
-        const els = {
-            hudAz: document.getElementById('hud-az-scale'),
-            hudAlt: document.getElementById('hud-alt-scale'),
-            arCanvas: document.getElementById('ar-canvas'),
-            arCtx: document.getElementById('ar-canvas').getContext('2d'),
-            dateInput: document.getElementById('date-picker-input'),
-            timeSlider: document.getElementById('time-slider'),
-            clock: document.getElementById('clock-display'),
-            date: document.getElementById('date-display'),
-            loc: document.getElementById('loc-display'),
-            toast: document.getElementById('toast'),
-            
-            // Info Panels
-            sunAz: document.getElementById('sun-az'),
-            sunAlt: document.getElementById('sun-alt'),
-            sunRa: document.getElementById('sun-ra'),
-            sunDec: document.getElementById('sun-dec'),
-            moonAz: document.getElementById('moon-az'),
-            moonAlt: document.getElementById('moon-alt'),
-            moonRa: document.getElementById('moon-ra'),
-            moonDec: document.getElementById('moon-dec'),
-            moonPhase: document.getElementById('moon-phase'),
-            
-            // Displays
-            azVal: document.getElementById('az-value-display'),
-            altVal: document.getElementById('alt-value-display'),
-            modeLbl: document.getElementById('mode-label')
-        };
+        const video = document.getElementById('video-feed');
+        const canvas = document.getElementById('ar-canvas');
+        const ctx = canvas.getContext('2d');
+        const elCoords = document.getElementById('coords');
+        const elOrient = document.getElementById('orientation');
+        const elSun = document.getElementById('sun-data');
+        const elMoon = document.getElementById('moon-data');
+        const arrowUp = document.getElementById('arrow-up');
+        const arrowDown = document.getElementById('arrow-down');
+        const arrowLeft = document.getElementById('arrow-left');
+        const arrowRight = document.getElementById('arrow-right');
+        const btnVoice = document.getElementById('btn-voice');
 
         // --- Initialization ---
         function startApp() {
-            // Request Permission for iOS 13+
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(response => {
-                        if (response === 'granted') initSensors();
-                        else showToast("Izin Sensor Ditolak", 3000);
-                    })
-                    .catch(console.error);
-            } else {
-                initSensors();
-            }
-
-            // Init Camera
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-                .then(stream => {
-                    document.getElementById('video').srcObject = stream;
-                })
-                .catch(err => {
-                    console.error("Camera Error:", err);
-                    showToast("Kamera tidak tersedia");
-                });
-
-            document.getElementById('start-screen').classList.add('hidden');
-            lucide.createIcons();
+            document.getElementById('permission-modal').style.display = 'none';
+            initCamera();
+            initSensors();
+            initGeolocation();
             
-            initScales();
+            // Start loops
+            window.addEventListener('resize', resizeCanvas);
             resizeCanvas();
-            updateLocation(); // Get GPS
-            
-            state.isRunning = true;
-            requestAnimationFrame(loop);
-            
-            // Setup Date Picker Listener
-            els.dateInput.addEventListener('change', (e) => {
-                if(e.target.value) {
-                    const newDate = new Date(e.target.value);
-                    const now = new Date();
-                    const diffMs = newDate - now;
-                    state.timeOffsetMinutes = Math.floor(diffMs / 60000);
-                    state.isLive = false;
-                    updateModeLabel();
-                }
-            });
-
-            // Setup Slider Listener
-            els.timeSlider.addEventListener('input', (e) => {
-                state.timeOffsetMinutes = parseInt(e.target.value);
-                state.isLive = (state.timeOffsetMinutes === 0);
-                updateModeLabel();
-            });
-        }
-
-        function initSensors() {
-            window.addEventListener('deviceorientation', (e) => {
-                // Handling differences between iOS and Android
-                let alpha = e.alpha; // 0-360
-                let beta = e.beta;   // -180 to 180 (front/back tilt)
-                
-                // Normalisasi Alpha (Kompas)
-                // WebkitCompassHeading untuk iOS
-                if (e.webkitCompassHeading) {
-                    state.sensorAlpha = e.webkitCompassHeading;
-                } else {
-                    // Standard Android: alpha 0 is North, increases counter-clockwise?
-                    // Usually we need: 360 - alpha for standard compass
-                    state.sensorAlpha = (360 - alpha) % 360; 
-                }
-
-                // Normalisasi Beta (Altitude)
-                // HP Tegak Lurus = 90 derajat
-                state.sensorBeta = beta;
-            }, true);
-        }
-
-        // --- UI Generators ---
-        function initScales() {
-            // Generate Azimuth Scale (0 - 360 - 0 for wrapping effect)
-            // Kita buat range luas agar saat scroll tidak kosong
-            let azHtml = '';
-            for (let i = -180; i <= 540; i += 1) { // Per 1 derajat
-                const isMajor = i % 10 === 0;
-                const isMid = i % 5 === 0;
-                const height = isMajor ? 'h-5' : (isMid ? 'h-3' : 'h-1.5');
-                const label = isMajor ? `<div class="absolute -top-4 text-[9px] font-bold text-gray-400 -translate-x-1/2">${normalizeDeg(i)}</div>` : '';
-                
-                // Hitung posisi left berdasarkan index
-                // Kita gunakan CSS absolute untuk setiap tick agar presisi
-                // Tapi flexbox lebih mudah. Mari gunakan container width dinamis.
-                // Pendekatan 2: Generasi div statis
-                
-                // Lebih baik generate string HTML
-                if(i % 5 === 0) { // Hanya render garis per 5 derajat untuk performa DOM
-                    azHtml += `
-                        <div class="absolute bottom-0 border-l ${isMajor ? 'border-white/80' : 'border-white/30'}" style="height:${isMajor?'20px':'10px'}; left: calc(50% + ${(i * PIXELS_PER_DEGREE_AZ)}px);">
-                            ${isMajor ? `<span class="absolute -top-4 -translate-x-1/2 text-[9px] font-bold text-gray-400">${normalizeDeg(i)}</span>` : ''}
-                        </div>
-                    `;
-                }
-            }
-            // Kita ubah logika render skala horizontal. Alih-alih flex, kita pakai absolute positioning relative terhadap titik 0.
-            // Titik 0 Azimuth akan di-geser oleh JS.
-            els.hudAz.innerHTML = azHtml;
-
-            // Generate Altitude Scale (+90 to -90)
-            let altHtml = '';
-            for (let i = 90; i >= -90; i -= 5) {
-                const isMajor = i % 10 === 0;
-                altHtml += `
-                    <div class="absolute right-0 border-t ${isMajor ? 'border-white/80' : 'border-white/30'}" style="width:${isMajor?'16px':'8px'}; top: calc(50% - ${(i * PIXELS_PER_DEGREE_ALT)}px);">
-                        ${isMajor ? `<span class="absolute -left-6 -translate-y-1/2 text-[9px] font-bold text-gray-400">${i}</span>` : ''}
-                    </div>
-                `;
-            }
-            els.hudAlt.innerHTML = altHtml;
-        }
-
-        // --- Core Loop ---
-        function loop() {
-            updateTime();
-            updateAstroData();
-            updateDisplay();
-            renderAR();
-            requestAnimationFrame(loop);
-        }
-
-        function updateTime() {
-            const now = new Date();
-            if (state.isLive) {
-                state.currentTime = now;
-            } else {
-                state.currentTime = new Date(now.getTime() + state.timeOffsetMinutes * 60000);
-            }
-        }
-
-        function updateAstroData() {
-            // Perhitungan Astronomi Sederhana (Approximation)
-            // Untuk aplikasi Pro sesungguhnya, gunakan library seperti astronomy-engine.js
-            // Di sini menggunakan algoritma Aproksimasi yang cukup akurat untuk visualisasi AR
-            
-            const date = state.currentTime;
-            const lat = state.lat;
-            const lon = state.lon;
-            
-            // 1. Julian Date
-            const J2000 = 2451545.0;
-            const jd = (date.getTime() / 86400000.0) + 2440587.5;
-            const d = jd - J2000;
-
-            // 2. Posisi Matahari
-            const M = (357.529 + 0.98560028 * d) % 360; // Mean Anomaly
-            const L = (280.459 + 0.98564736 * d) % 360; // Mean Longitude
-            const lambda = L + 1.915 * Math.sin(M * RAD) + 0.020 * Math.sin(2 * M * RAD); // Ecliptic Longitude
-            const obliq = 23.439 - 0.00000036 * d; // Obliquity
-
-            const sunRa = Math.atan2(Math.cos(obliq * RAD) * Math.sin(lambda * RAD), Math.cos(lambda * RAD)) * DEG;
-            const sunDec = Math.asin(Math.sin(obliq * RAD) * Math.sin(lambda * RAD)) * DEG;
-            
-            // 3. Posisi Bulan (Simplified)
-            const L_moon = (218.316 + 13.176396 * d) % 360;
-            const M_moon = (134.963 + 13.064993 * d) % 360;
-            const F_moon = (93.272 + 13.229350 * d) % 360;
-            const moonLong = L_moon + 6.289 * Math.sin(M_moon * RAD);
-            const moonLat = 5.128 * Math.sin(F_moon * RAD);
-            
-            // Konversi Ecliptic ke Equatorial (Moon)
-            const cosE = Math.cos(obliq * RAD);
-            const sinE = Math.sin(obliq * RAD);
-            const cosL = Math.cos(moonLong * RAD);
-            const sinL = Math.sin(moonLong * RAD);
-            const cosB = Math.cos(moonLat * RAD);
-            const sinB = Math.sin(moonLat * RAD);
-
-            const moonRa = Math.atan2(cosE * sinL * cosB - sinE * sinB, cosL * cosB) * DEG;
-            const moonDec = Math.asin(sinE * sinL * cosB + cosE * sinB) * DEG;
-
-            // 4. Hitung Azimuth & Altitude (Local Coordinates)
-            // GMST
-            const GMST = (18.697374558 + 24.06570982441908 * d) % 24;
-            const LMST = (GMST * 15 + lon) % 360;
-
-            const sunPos = eqToHor(normalizeDeg(sunRa), sunDec, lat, LMST);
-            const moonPos = eqToHor(normalizeDeg(moonRa), moonDec, lat, LMST);
-
-            state.sun = { ...state.sun, ...sunPos, ra: sunRa, dec: sunDec };
-            state.moon = { ...state.moon, ...moonPos, ra: moonRa, dec: moonDec, phase: (1 - Math.cos((lambda - moonLong)*RAD))/2 * 100 };
-        }
-
-        function eqToHor(ra, dec, lat, lmst) {
-            const ha = (lmst - ra + 360) % 360; // Hour Angle
-            const haRad = ha * RAD;
-            const decRad = dec * RAD;
-            const latRad = lat * RAD;
-
-            const sinAlt = Math.sin(decRad) * Math.sin(latRad) + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
-            const alt = Math.asin(sinAlt) * DEG;
-
-            const cosAz = (Math.sin(decRad) - Math.sin(alt * RAD) * Math.sin(latRad)) / (Math.cos(alt * RAD) * Math.cos(latRad));
-            // Koreksi quadrant Azimuth
-            // Rumus Atan2 lebih stabil
-            const y = -Math.sin(haRad) * Math.cos(decRad); // Sin(Az) * Cos(Alt)
-            const x = Math.sin(decRad) * Math.cos(latRad) - Math.cos(decRad) * Math.sin(latRad) * Math.cos(haRad); // Cos(Az) * Cos(Alt)
-            let az = Math.atan2(y, x) * DEG;
-            
-            return { az: normalizeDeg(az), alt: alt };
-        }
-
-        function updateDisplay() {
-            // Update Text Info
-            els.clock.innerText = state.currentTime.toLocaleTimeString('id-ID', { hour12: false });
-            els.date.innerText = state.currentTime.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
-            
-            els.sunAz.innerText = state.sun.az.toFixed(1) + '°';
-            els.sunAlt.innerText = state.sun.alt.toFixed(1) + '°';
-            els.sunRa.innerText = formatRa(state.sun.ra);
-            els.sunDec.innerText = state.sun.dec.toFixed(2) + '°';
-
-            els.moonAz.innerText = state.moon.az.toFixed(1) + '°';
-            els.moonAlt.innerText = state.moon.alt.toFixed(1) + '°';
-            els.moonRa.innerText = formatRa(state.moon.ra);
-            els.moonDec.innerText = state.moon.dec.toFixed(2) + '°';
-            els.moonPhase.innerText = `PHASE: ${state.moon.phase.toFixed(0)}%`;
-
-            // --- Tentukan Sudut Pandang (View Angle) ---
-            let viewAz, viewAlt;
-
-            if (state.trackingTarget === 'sun') {
-                // Mode Track: Mengunci pandangan ke Matahari
-                viewAz = state.sun.az;
-                viewAlt = state.sun.alt;
-            } else if (state.trackingTarget === 'moon') {
-                // Mode Track: Mengunci pandangan ke Bulan
-                viewAz = state.moon.az;
-                viewAlt = state.moon.alt;
-            } else {
-                // Mode Sensor (AR)
-                // View Azimuth = Sensor Alpha + Compass Offset
-                viewAz = normalizeDeg(state.sensorAlpha + state.compassOffset);
-                // View Altitude = Sensor Beta (Phone tilt) - 90 (karena beta 0 itu HP rebah di meja, 90 itu berdiri)
-                // Koreksi standar: Beta 90 = tegak. 
-                // Kita ingin Horizon = 0 derajat.
-                // Jika HP tegak (Beta 90), kita lihat horizon (Alt 0).
-                viewAlt = state.sensorBeta - 90;
-            }
-
-            els.azVal.innerText = viewAz.toFixed(0) + '°';
-            els.altVal.innerText = viewAlt.toFixed(0) + '°';
-
-            // --- Update Skala HUD (Perbaikan Poin 1) ---
-            // Logika: 
-            // Posisi 0 skala harus berada di X. 
-            // X = CenterScreen - (CurrentAzimuth * PixelsPerDegree)
-            // Namun karena kita pakai HTML statis yang panjang, kita geser containernya.
-            // Container 0 derajat ada di `left: 50%`. 
-            // Jika Azimuth = 10 derajat, kita harus geser container ke KIRI sejauh 10 unit.
-            // transform = -1 * ViewAz * PIXELS
-            
-            els.hudAz.style.transform = `translateX(${-viewAz * PIXELS_PER_DEGREE_AZ}px)`;
-            
-            // Altitude Scale
-            // 0 derajat ada di `top: 50%`.
-            // Jika Altitude = 10 derajat (naik), skala harus turun (geser container ke BAWAH).
-            els.hudAlt.style.transform = `translateY(${viewAlt * PIXELS_PER_DEGREE_ALT}px)`;
-        }
-
-        function renderAR() {
-            const ctx = els.arCtx;
-            const w = els.arCanvas.width;
-            const h = els.arCanvas.height;
-            const cx = w / 2;
-            const cy = h / 2;
-
-            ctx.clearRect(0, 0, w, h);
-
-            // Dapatkan Current View Heading
-            let currentAz, currentAlt;
-            
-            if (state.trackingTarget !== 'none') {
-                // Dalam mode tracking, objek selalu di tengah
-                currentAz = (state.trackingTarget === 'sun') ? state.sun.az : state.moon.az;
-                currentAlt = (state.trackingTarget === 'sun') ? state.sun.alt : state.moon.alt;
-            } else {
-                currentAz = normalizeDeg(state.sensorAlpha + state.compassOffset);
-                currentAlt = state.sensorBeta - 90;
-            }
-
-            // Fungsi Proyeksi (World to Screen)
-            const project = (objAz, objAlt) => {
-                let deltaAz = objAz - currentAz;
-                // Handle wrapping (e.g. 359 to 1 should be +2 diff, not -358)
-                if (deltaAz > 180) deltaAz -= 360;
-                if (deltaAz < -180) deltaAz += 360;
-
-                const deltaAlt = objAlt - currentAlt;
-
-                // Konversi derajat selisih ke pixel layar
-                // PIXELS_PER_DEGREE_AZ disini berperan sebagai FOV scaler. 
-                // HP standar FOV ~60 derajat horizontal. Width layar ~400px. 400/60 ~ 6-7px per degree.
-                // Tapi untuk AR effect yang "terlihat dekat", kita pakai nilai di konstanta.
-                
-                const x = cx + (deltaAz * PIXELS_PER_DEGREE_AZ);
-                const y = cy - (deltaAlt * PIXELS_PER_DEGREE_ALT); // Y axis inverted on screen
-
-                return { x, y, visible: Math.abs(deltaAz) < 90 }; // Hanya gambar jika di depan kita
-            };
-
-            // Draw Sun
-            const sPos = project(state.sun.az, state.sun.alt);
-            if (sPos.visible) {
-                // Glow
-                const grad = ctx.createRadialGradient(sPos.x, sPos.y, 10, sPos.x, sPos.y, 60);
-                grad.addColorStop(0, 'rgba(255, 165, 0, 0.8)');
-                grad.addColorStop(1, 'rgba(255, 165, 0, 0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath(); ctx.arc(sPos.x, sPos.y, 60, 0, PI*2); ctx.fill();
-                
-                // Core
-                ctx.fillStyle = '#fff';
-                ctx.beginPath(); ctx.arc(sPos.x, sPos.y, 15, 0, PI*2); ctx.fill();
-                
-                // Label
-                ctx.fillStyle = 'white';
-                ctx.font = 'bold 12px monospace';
-                ctx.fillText('MATAHARI', sPos.x - 30, sPos.y + 80);
-            }
-
-            // Draw Moon
-            const mPos = project(state.moon.az, state.moon.alt);
-            if (mPos.visible) {
-                ctx.shadowBlur = 20; ctx.shadowColor = 'white';
-                ctx.fillStyle = '#ddd';
-                ctx.beginPath(); ctx.arc(mPos.x, mPos.y, 12, 0, PI*2); ctx.fill();
-                ctx.shadowBlur = 0;
-                
-                // Phase shadow (Simplified visual)
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.beginPath(); ctx.arc(mPos.x + 5, mPos.y, 12, 0, PI*2); ctx.fill();
-
-                ctx.fillStyle = '#ddd';
-                ctx.font = 'bold 12px monospace';
-                ctx.fillText('BULAN', mPos.x - 20, mPos.y + 40);
-            }
-            
-            // Draw Horizon Line
-            const hPos = project(currentAz, 0); // Alt 0
-            ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(0, hPos.y);
-            ctx.lineTo(w, hPos.y);
-            ctx.stroke();
-            ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
-            ctx.fillText('HORIZON', 10, hPos.y - 5);
-        }
-
-        // --- User Actions ---
-        
-        // Poin 2: Sync Sun (Kalibrasi Kompas)
-        function syncCompass() {
-            if (state.trackingTarget !== 'none') {
-                showToast("Matikan Mode Tracking dulu!");
-                return;
-            }
-            // Hitung selisih: Azimuth Matahari Sebenarnya - Azimuth Sensor Saat Ini
-            const offset = state.sun.az - state.sensorAlpha;
-            state.compassOffset = normalizeDeg(offset);
-            showToast(`Terkalibrasi! Offset: ${state.compassOffset.toFixed(1)}°`);
-        }
-
-        // Poin 5: Track Sun/Moon (Simulation Lock)
-        function toggleTrack(target) {
-            if (state.trackingTarget === target) {
-                // Matikan tracking
-                state.trackingTarget = 'none';
-                els.modeLbl.innerText = "LIVE SENSOR";
-                els.modeLbl.classList.remove("text-red-500");
-                document.getElementById(`btn-track-${target}`).classList.remove('bg-white/20');
-            } else {
-                // Hidupkan tracking
-                // Reset tombol lain
-                document.getElementById('btn-track-sun').classList.remove('bg-white/20');
-                document.getElementById('btn-track-moon').classList.remove('bg-white/20');
-                
-                state.trackingTarget = target;
-                els.modeLbl.innerText = `LOCKED: ${target.toUpperCase()}`;
-                els.modeLbl.classList.add("text-red-500");
-                document.getElementById(`btn-track-${target}`).classList.add('bg-white/20');
-                
-                showToast(`Visual terkunci ke ${target.toUpperCase()}`);
-            }
-        }
-
-        // Poin 3: Date Picker (Pilihan)
-        function openDatePicker() {
-            // Trik untuk membuka native date picker
-            els.dateInput.showPicker(); 
-        }
-
-        // Poin 4: GPS Manual (Prompt yang rapi)
-        function handleManualGps() {
-            if (state.gpsMode === 'auto') {
-                // Switch to Manual
-                const input = prompt("Masukkan Koordinat Manual (Lat, Lon):", `${state.lat.toFixed(6)}, ${state.lon.toFixed(6)}`);
-                if (input) {
-                    const parts = input.split(',');
-                    if (parts.length === 2) {
-                        state.lat = parseFloat(parts[0]);
-                        state.lon = parseFloat(parts[1]);
-                        state.gpsMode = 'manual';
-                        document.getElementById('gps-btn-label').innerText = "MAN";
-                        document.getElementById('loc-display').innerText = `MAN: ${state.lat.toFixed(2)}, ${state.lon.toFixed(2)}`;
-                        showToast("Mode GPS Manual Aktif");
-                    } else {
-                        showToast("Format Salah!");
-                    }
-                }
-            } else {
-                // Switch back to Auto
-                state.gpsMode = 'auto';
-                document.getElementById('gps-btn-label').innerText = "AUTO";
-                updateLocation();
-                showToast("Mencari GPS...");
-            }
-        }
-
-        function updateLocation() {
-            if (state.gpsMode === 'manual') return;
-            
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    state.lat = position.coords.latitude;
-                    state.lon = position.coords.longitude;
-                    document.getElementById('loc-display').innerText = `GPS: ${state.lat.toFixed(2)}, ${state.lon.toFixed(2)}`;
-                }, error => {
-                    console.error(error);
-                    document.getElementById('loc-display').innerText = "GPS Error";
-                });
-            }
-        }
-
-        function shiftTime(minutes) {
-            state.timeOffsetMinutes += minutes;
-            state.isLive = false;
-            els.timeSlider.value = state.timeOffsetMinutes;
-            updateModeLabel();
-        }
-
-        function resetTime() {
-            state.timeOffsetMinutes = 0;
-            state.isLive = true;
-            els.timeSlider.value = 0;
-            els.dateInput.value = ''; // Reset picker
-            updateModeLabel();
-            showToast("Waktu Real-time");
-        }
-
-        function updateModeLabel() {
-            if (state.isLive) {
-                if (state.trackingTarget === 'none') els.modeLbl.innerText = "LIVE SENSOR";
-            } else {
-                els.modeLbl.innerText = "SIMULASI WAKTU";
-                els.modeLbl.classList.add("text-yellow-500");
-            }
-        }
-
-        // --- Utilities ---
-        function normalizeDeg(deg) {
-            let d = deg % 360;
-            if (d < 0) d += 360;
-            return d;
-        }
-
-        function formatRa(deg) {
-            const h = Math.floor(deg / 15);
-            const m = Math.floor((deg % 15) * 4);
-            return `${h}h ${m}m`;
-        }
-
-        function showToast(msg, duration = 2000) {
-            els.toast.innerText = msg;
-            els.toast.classList.remove('hidden');
-            setTimeout(() => {
-                els.toast.classList.add('hidden');
-            }, duration);
+            requestAnimationFrame(renderLoop);
+            setInterval(updateAstroPositions, 1000); // Update astro calc every second
         }
 
         function resizeCanvas() {
-            els.arCanvas.width = window.innerWidth;
-            els.arCanvas.height = window.innerHeight;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         }
 
-        window.addEventListener('resize', resizeCanvas);
+        // --- Camera Setup ---
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                alert("Gagal akses kamera: " + err.message);
+            }
+        }
+
+        // --- Voice Recognition Setup ---
+        let recognition;
+        function initVoice() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.lang = 'id-ID';
+                recognition.continuous = true;
+                recognition.interimResults = false;
+
+                recognition.onresult = (event) => {
+                    const last = event.results.length - 1;
+                    const transcript = event.results[last][0].transcript.trim().toLowerCase();
+                    console.log("Voice heard:", transcript);
+
+                    if (transcript.includes('ambil') || transcript.includes('foto') || transcript.includes('cekrek')) {
+                        flashScreen();
+                        takePhoto();
+                    }
+                };
+
+                recognition.onerror = (event) => {
+                    console.log('Voice error:', event.error);
+                    state.listening = false;
+                    updateVoiceUI();
+                };
+                
+                recognition.onend = () => {
+                    if (state.listening) recognition.start(); // Auto restart if supposed to be listening
+                };
+            } else {
+                alert("Browser ini tidak mendukung Voice Recognition.");
+                btnVoice.style.display = 'none';
+            }
+        }
+
+        function toggleVoice() {
+            if (!recognition) initVoice();
+            
+            state.listening = !state.listening;
+            updateVoiceUI();
+            
+            if (state.listening) {
+                recognition.start();
+            } else {
+                recognition.stop();
+            }
+        }
+
+        function updateVoiceUI() {
+            if (state.listening) {
+                btnVoice.classList.add('listening');
+            } else {
+                btnVoice.classList.remove('listening');
+            }
+        }
+
+        function flashScreen() {
+            const flash = document.createElement('div');
+            flash.style.position = 'fixed';
+            flash.style.top = '0'; flash.style.left = '0';
+            flash.style.width = '100%'; flash.style.height = '100%';
+            flash.style.background = 'white';
+            flash.style.zIndex = '1000';
+            flash.style.opacity = '0.8';
+            flash.style.transition = 'opacity 0.2s';
+            document.body.appendChild(flash);
+            setTimeout(() => { flash.style.opacity = '0'; }, 50);
+            setTimeout(() => { flash.remove(); }, 250);
+        }
+
+        // --- Sensor Setup (Compass & Gyro) ---
+        function initSensors() {
+            if (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission === 'function') {
+                // iOS 13+ logic
+                window.DeviceOrientationEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            window.addEventListener('deviceorientation', handleOrientation);
+                        } else {
+                            alert("Izin sensor ditolak.");
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                // Android / Non-iOS
+                window.addEventListener('deviceorientationabsolute', handleOrientation, true); // Try absolute first
+                window.addEventListener('deviceorientation', handleOrientation, true);
+            }
+        }
+
+        function handleOrientation(e) {
+            let compass = e.webkitCompassHeading || Math.abs(e.alpha - 360);
+            
+            // Android fallback logic (simplified) if webkitCompassHeading not available
+            if (!e.webkitCompassHeading && e.alpha) {
+                compass = 360 - e.alpha; 
+            }
+
+            state.azimuth = compass % 360;
+            // Beta is usually pitch (-180 to 180). We clamp for easier display.
+            // In portrait mode held up: Beta is roughly 90. Horizon is 90.
+            // We need to map sensor beta to "Camera Pitch".
+            // Typically: 90 deg = Horizon. 
+            state.altitude = e.beta; 
+            
+            // Update UI
+            elOrient.innerText = `Az: ${Math.round(state.azimuth)}° | Alt: ${Math.round(state.altitude)}°`;
+        }
+
+        function initGeolocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    state.lat = pos.coords.latitude;
+                    state.lon = pos.coords.longitude;
+                    elCoords.innerText = `Lat: ${state.lat.toFixed(2)} Lon: ${state.lon.toFixed(2)}`;
+                    updateAstroPositions();
+                });
+            }
+        }
+
+        // --- Astro Math (Simplified Approximation) ---
+        // Just enough to show the "Find" feature works. For real precision, use a library.
+        function updateAstroPositions() {
+            const date = new Date();
+            // Simplified Sun Position Logic (placeholder math for demo)
+            // Real calc would involve Julian Date, Ecliptic coord, etc.
+            
+            // Mocking movement based on time of day
+            const hour = date.getHours() + date.getMinutes()/60;
+            // Sun rises East (90), sets West (270). High at noon.
+            // Simple mapping for demo:
+            let sunAz = 180; 
+            let sunAlt = -90;
+            
+            if(hour > 6 && hour < 18) {
+                sunAlt = 90 - Math.abs(12 - hour) * 15; // Rough peak at noon
+                sunAz = 90 + (hour - 6) * 15; 
+            }
+            
+            state.sunPos = { az: sunAz, alt: sunAlt };
+            
+            // Moon: Just offset from sun for demo purposes (or random fixed for stability)
+            state.moonPos = { az: (sunAz + 180) % 360, alt: 45 }; 
+
+            elSun.innerText = `Sun: ${Math.round(state.sunPos.az)}° / ${Math.round(state.sunPos.alt)}°`;
+            elMoon.innerText = `Moon: ${Math.round(state.moonPos.az)}° / ${Math.round(state.moonPos.alt)}°`;
+        }
+
+        // --- Logic: Find Target ---
+        function toggleTarget(target) {
+            // Remove active classes
+            document.getElementById('btn-sun').classList.remove('active');
+            document.getElementById('btn-moon').classList.remove('active');
+            
+            if (state.tracking === target) {
+                state.tracking = null; // Turn off
+                hideArrows();
+            } else {
+                state.tracking = target;
+                document.getElementById('btn-' + target).classList.add('active');
+            }
+        }
+
+        function updateGuideArrows(targetAz, targetAlt) {
+            if (!state.tracking) return;
+
+            const currentAz = state.azimuth;
+            const currentAlt = state.altitude;
+
+            // Calculate smallest difference in Azimuth
+            let diffAz = targetAz - currentAz;
+            if (diffAz > 180) diffAz -= 360;
+            if (diffAz < -180) diffAz += 360;
+
+            let diffAlt = targetAlt - currentAlt;
+
+            // Threshold to show arrows
+            const threshold = 5; 
+
+            // Horizontal
+            if (diffAz > threshold) {
+                arrowRight.style.opacity = 1; arrowLeft.style.opacity = 0;
+            } else if (diffAz < -threshold) {
+                arrowRight.style.opacity = 0; arrowLeft.style.opacity = 1;
+            } else {
+                arrowRight.style.opacity = 0; arrowLeft.style.opacity = 0;
+            }
+
+            // Vertical
+            if (diffAlt > threshold) {
+                arrowUp.style.opacity = 1; arrowDown.style.opacity = 0;
+            } else if (diffAlt < -threshold) {
+                arrowUp.style.opacity = 0; arrowDown.style.opacity = 1;
+            } else {
+                arrowUp.style.opacity = 0; arrowDown.style.opacity = 0;
+            }
+            
+            // If "Locked on" (within threshold)
+            if (Math.abs(diffAz) < threshold && Math.abs(diffAlt) < threshold) {
+                // Change crosshair color logic could go here
+            }
+        }
+
+        function hideArrows() {
+            arrowUp.style.opacity = 0;
+            arrowDown.style.opacity = 0;
+            arrowLeft.style.opacity = 0;
+            arrowRight.style.opacity = 0;
+        }
+
+        // --- Rendering (The "Fix" for Centering) ---
+        function renderLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            
+            // Field of View (approx) - determines pixels per degree
+            const fov = 60; 
+            const pxPerDeg = h / fov; 
+
+            // 1. Draw Crosshair (STATIC in center)
+            ctx.strokeStyle = '#00ffcc';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            // Horizontal dash
+            ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy);
+            // Vertical dash
+            ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy + 20);
+            ctx.stroke();
+
+            // Circle around center
+            ctx.beginPath();
+            ctx.arc(cx, cy, 30, 0, Math.PI*2);
+            ctx.strokeStyle = 'rgba(0, 255, 204, 0.3)';
+            ctx.stroke();
+
+            // 2. Draw Horizon & Altitude Grid
+            // The grid moves OPPOSITE to device pitch.
+            // If device pitches UP (+), grid moves DOWN.
+            
+            // Current Device Altitude defines what degree is at center (cy)
+            const centerAlt = state.altitude; 
+            
+            // Draw Horizon (0 degrees altitude)
+            const horizonY = cy + (centerAlt - 0) * pxPerDeg; 
+            
+            ctx.strokeStyle = '#ff3333'; // Red for horizon
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, horizonY);
+            ctx.lineTo(w, horizonY);
+            ctx.stroke();
+            ctx.fillStyle = '#ff3333';
+            ctx.fillText("HORIZON", 10, horizonY - 5);
+
+            // Draw other altitude lines (e.g., every 10 degrees)
+            ctx.strokeStyle = 'rgba(0, 255, 204, 0.3)';
+            ctx.fillStyle = 'rgba(0, 255, 204, 0.7)';
+            ctx.textAlign = 'center';
+            
+            // Only draw lines visible on screen to save perf
+            const minVisAlt = centerAlt - (fov/2) - 10;
+            const maxVisAlt = centerAlt + (fov/2) + 10;
+
+            for (let a = -90; a <= 90; a += 10) {
+                if (a === 0) continue; // Already drew horizon
+                if (a < minVisAlt || a > maxVisAlt) continue;
+
+                const y = cy + (centerAlt - a) * pxPerDeg;
+                
+                ctx.beginPath();
+                ctx.moveTo(cx - 50, y);
+                ctx.lineTo(cx + 50, y); // Small center line
+                ctx.stroke();
+                
+                ctx.fillText(a + "°", cx + 60, y + 4);
+            }
+
+            // 3. Draw Azimuth (Compass) Strip
+            // Drawn at top or bottom, sliding based on state.azimuth
+            const stripY = h * 0.2;
+            const pxPerDegAz = w / 90; // Show 90 degrees of compass at once
+            const centerAz = state.azimuth;
+            
+            ctx.font = "14px Courier New";
+            for (let i = 0; i < 360; i += 15) {
+                let diff = i - centerAz;
+                // Wrap around logic
+                if (diff < -180) diff += 360;
+                if (diff > 180) diff -= 360;
+                
+                if (Math.abs(diff) > 50) continue; // Optimization
+
+                const x = cx + diff * pxPerDegAz;
+                
+                // Draw tick
+                ctx.beginPath();
+                ctx.moveTo(x, stripY);
+                ctx.lineTo(x, stripY - 10);
+                ctx.stroke();
+                
+                // Draw label
+                let label = i + "°";
+                if (i === 0) label = "N";
+                if (i === 90) label = "E";
+                if (i === 180) label = "S";
+                if (i === 270) label = "W";
+                
+                ctx.fillText(label, x, stripY - 15);
+            }
+
+            // 4. Draw Targets (Sun/Moon)
+            if (state.tracking) {
+                const target = state.tracking === 'sun' ? state.sunPos : state.moonPos;
+                updateGuideArrows(target.az, target.alt);
+                
+                // Calculate position on screen
+                let azDiff = target.az - state.azimuth;
+                if (azDiff > 180) azDiff -= 360;
+                if (azDiff < -180) azDiff += 360;
+                
+                const tX = cx + azDiff * pxPerDeg; // Use same scale for horizontal approx
+                const tY = cy + (state.altitude - target.alt) * pxPerDeg;
+
+                // Only draw if roughly within view
+                if (tX > -100 && tX < w + 100 && tY > -100 && tY < h + 100) {
+                    ctx.save();
+                    ctx.translate(tX, tY);
+                    
+                    // Target Circle
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 40, 0, Math.PI*2);
+                    ctx.strokeStyle = state.tracking === 'sun' ? '#ffff00' : '#ffffff';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    // Cross inside target
+                    ctx.beginPath();
+                    ctx.moveTo(-50, 0); ctx.lineTo(50, 0);
+                    ctx.moveTo(0, -50); ctx.lineTo(0, 50);
+                    ctx.stroke();
+
+                    ctx.fillStyle = state.tracking === 'sun' ? '#ffff00' : '#ffffff';
+                    ctx.fillText(state.tracking === 'sun' ? "SUN" : "MOON", 0, -50);
+                    
+                    ctx.restore();
+                }
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        // --- Screenshot Logic ---
+        function takePhoto() {
+            // Flash effect is handled by voice logic too, but here for button click
+            const flash = document.createElement('div');
+            flash.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:999;opacity:1;transition:opacity 0.5s";
+            document.body.appendChild(flash);
+            setTimeout(() => flash.style.opacity = 0, 50);
+            setTimeout(() => flash.remove(), 550);
+
+            // Create a temporary canvas to combine video + AR
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = video.videoWidth || canvas.width;
+            tempCanvas.height = video.videoHeight || canvas.height;
+            const tCtx = tempCanvas.getContext('2d');
+            
+            // Draw Video
+            tCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+            // Draw AR Overlay (Scaled)
+            tCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Download
+            const link = document.createElement('a');
+            link.download = `AstroCam-${Date.now()}.png`;
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+        }
 
     </script>
 </body>
