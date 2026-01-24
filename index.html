@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instrumen Falak Digital</title>
+    <title>Instrumen Falak Digital Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -12,21 +12,19 @@
         body {
             font-family: 'JetBrains Mono', monospace;
             background-color: black;
-            color: #ef4444; /* Default Red 500 */
+            color: #ef4444;
             overflow: hidden;
             touch-action: none;
         }
 
-        .night-mode { color: #ef4444; }
-        .day-mode { color: #4ade80; }
-
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            height: 16px;
-            width: 16px;
+            height: 20px;
+            width: 20px;
             border-radius: 50%;
-            background: currentColor;
+            background: #f59e0b;
             cursor: pointer;
+            border: 2px solid white;
         }
 
         .scanline {
@@ -35,132 +33,175 @@
             background-size: 100% 2px, 3px 100%;
             pointer-events: none;
         }
+
+        .arc-line {
+            stroke-dasharray: 5, 5;
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
-<body class="night-mode">
+<body class="bg-black">
 
     <div id="app" class="relative w-full h-screen overflow-hidden">
         <!-- Viewfinder Kamera -->
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div id="camera-container" class="relative w-full max-w-2xl aspect-video rounded-3xl overflow-hidden border-2 border-red-900/50 shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-slate-900">
-                <video id="video" autoplay playsinline class="w-full h-full object-cover opacity-70"></video>
+            <div id="camera-container" class="relative w-full max-w-4xl aspect-video rounded-3xl overflow-hidden border-2 border-red-900/50 shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-slate-900">
+                <video id="video" autoplay playsinline class="w-full h-full object-cover opacity-60"></video>
+                <canvas id="overlay-canvas" class="absolute inset-0 z-20 pointer-events-none"></canvas>
                 <div class="absolute inset-0 scanline z-10"></div>
                 
                 <!-- Crosshair -->
-                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div id="crosshair" class="w-32 h-32 border-2 border-white/20 rounded-full transition-all duration-500 opacity-30">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <div class="w-1 h-1 bg-white rounded-full"></div>
-                        </div>
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+                    <div id="crosshair" class="w-40 h-40 border border-white/20 rounded-full flex items-center justify-center">
+                        <div class="w-8 h-px bg-white/40"></div>
+                        <div class="h-8 w-px bg-white/40 absolute"></div>
+                        <div id="target-pointer" class="absolute w-4 h-4 bg-yellow-500 rounded-full blur-sm opacity-0 transition-opacity"></div>
                     </div>
                 </div>
+
+                <!-- Tombol Ambil Foto -->
+                <button onclick="takePhoto()" class="absolute right-6 top-1/2 -translate-y-1/2 z-40 w-16 h-16 rounded-full border-4 border-white/50 bg-white/10 flex items-center justify-center active:scale-90 transition-transform">
+                    <div class="w-12 h-12 bg-white rounded-full"></div>
+                </button>
             </div>
         </div>
 
         <!-- Skala Altitude (Y) -->
-        <div class="absolute right-6 top-1/4 bottom-1/4 w-12 flex flex-col justify-between items-end pointer-events-none border-r border-white/10 pr-2 text-white">
-            <div class="flex items-center gap-2"><span class="text-[9px]">45°</span><div class="h-px w-3 bg-white/40"></div></div>
-            <div class="flex items-center gap-2"><span class="text-[9px]">30°</span><div class="h-px w-3 bg-white/40"></div></div>
-            <div class="flex items-center gap-2"><span class="text-[9px]">15°</span><div class="h-px w-3 bg-white/40"></div></div>
-            <div class="flex items-center gap-2"><span class="text-[9px]">0°</span><div class="h-px w-6 bg-red-500"></div></div>
-            <div class="flex items-center gap-2"><span class="text-[9px]">-15°</span><div class="h-px w-3 bg-white/40"></div></div>
+        <div class="absolute right-10 top-1/4 bottom-1/4 w-16 flex flex-col justify-between items-end pointer-events-none border-r border-white/10 pr-2">
+            <div class="flex items-center gap-2"><span class="text-[10px] text-white">90°</span><div class="h-px w-4 bg-white"></div></div>
+            <div class="flex items-center gap-2"><span class="text-[10px] text-white">45°</span><div class="h-px w-4 bg-white/60"></div></div>
+            <div class="flex items-center gap-2"><span class="text-[10px] text-red-500 font-bold">0°</span><div class="h-px w-8 bg-red-500"></div></div>
+            <div class="flex items-center gap-2"><span class="text-[10px] text-white">-45°</span><div class="h-px w-4 bg-white/60"></div></div>
+            <div class="flex items-center gap-2"><span class="text-[10px] text-white">-90°</span><div class="h-px w-4 bg-white"></div></div>
             
-            <div id="alt-indicator" class="absolute right-0 w-16 h-8 border-y border-white/50 bg-white/10 flex items-center justify-center transition-all duration-150" style="top: 50%">
-                <span id="alt-val" class="text-white font-bold text-xs">0.0°</span>
+            <div id="alt-indicator" class="absolute right-0 w-20 h-8 border border-yellow-500 bg-black/60 flex items-center justify-center z-30" style="top: 50%">
+                <span id="alt-val" class="text-yellow-500 font-bold text-xs">0.0°</span>
             </div>
         </div>
 
         <!-- Skala Azimuth (X) -->
-        <div class="absolute bottom-40 left-0 right-0 h-10 flex justify-center pointer-events-none">
-            <div class="relative w-2/3 border-t border-white/20 overflow-hidden">
-                <div id="az-scale" class="flex transition-all duration-150 ease-linear absolute left-1/2">
+        <div class="absolute bottom-48 left-0 right-0 h-12 flex justify-center pointer-events-none">
+            <div class="relative w-3/4 border-t border-white/20 overflow-hidden">
+                <div id="az-scale" class="flex transition-all duration-150 ease-linear absolute left-1/2 h-full items-start">
                     <!-- Ticks generated by JS -->
                 </div>
-                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-px h-8 bg-red-500 shadow-[0_0_10px_red]"></div>
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-px h-10 bg-red-500 shadow-[0_0_10px_red] z-30"></div>
             </div>
         </div>
 
         <!-- Dashboard Atas -->
-        <div class="absolute top-6 left-6 right-6 flex justify-between items-start pointer-events-none">
-            <div class="p-4 rounded-lg border border-red-900/50 bg-red-950/20 backdrop-blur-xl">
-                <div class="flex items-center gap-3 mb-3">
+        <div class="absolute top-8 left-8 right-8 flex justify-between items-start pointer-events-none">
+            <div class="p-4 rounded-lg border border-red-900/50 bg-black/60 backdrop-blur-md">
+                <div class="flex items-center gap-3 mb-2">
                     <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                    <span class="text-xs font-black tracking-[0.2em] text-white">HILAL_TRACKER_V2</span>
+                    <span class="text-xs font-black tracking-widest text-white">FALAK_PRO_SYSTEM</span>
                 </div>
-                <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-[10px] uppercase opacity-80 text-white">
-                    <p>Lat: <span id="lat-val" class="text-white">---</span></p>
-                    <p>Azm: <span id="az-display" class="text-white">0.0°</span></p>
-                    <p>Lon: <span id="lon-val" class="text-white">---</span></p>
-                    <p>Alt: <span id="alt-display" class="text-white">0.0°</span></p>
+                <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-[10px] uppercase text-gray-300">
+                    <p>LAT: <span id="lat-val" class="text-white">---</span></p>
+                    <p>AZM: <span id="az-display" class="text-white">0.0°</span></p>
+                    <p>LON: <span id="lon-val" class="text-white">---</span></p>
+                    <p>ALT: <span id="alt-display" class="text-white">0.0°</span></p>
                 </div>
             </div>
 
-            <div class="flex flex-col gap-2 pointer-events-auto">
-                <button onclick="toggleNightMode()" class="p-3 rounded-full border border-red-900/50 bg-red-950/20 flex items-center justify-center">
-                    <i data-lucide="eye" size="18"></i>
-                </button>
-                <button id="lock-btn" onclick="toggleLock()" class="p-3 rounded-full border border-red-900/50 bg-red-950/20 flex items-center justify-center">
-                    <i data-lucide="unlock" size="18"></i>
+            <div class="flex flex-col gap-3 pointer-events-auto">
+                <!-- Target Switcher -->
+                <div class="flex flex-col bg-black/60 p-1 rounded-xl border border-white/10">
+                    <button onclick="setTarget('moon')" id="btn-moon" class="p-3 rounded-lg bg-yellow-500 text-black transition-colors mb-1">
+                        <i data-lucide="moon" size="20"></i>
+                    </button>
+                    <button onclick="setTarget('sun')" id="btn-sun" class="p-3 rounded-lg hover:bg-white/10 text-white transition-colors">
+                        <i data-lucide="sun" size="20"></i>
+                    </button>
+                </div>
+                <!-- Calibration Button -->
+                <button onclick="calibrateSensor()" class="p-3 rounded-full border border-orange-500 bg-orange-500/20 text-orange-500 flex items-center justify-center shadow-[0_0_15px_rgba(249,115,22,0.3)]">
+                    <i data-lucide="refresh-cw" size="20"></i>
                 </button>
             </div>
         </div>
 
-        <!-- Target Center -->
-        <div class="absolute top-6 left-1/2 -translate-x-1/2 text-center pointer-events-none">
-            <div class="px-4 py-1 bg-black/80 border border-white/10 rounded-full flex items-center gap-2">
-               <span class="text-[10px] text-gray-400 uppercase">Target: </span>
-               <span class="text-[10px] font-bold text-yellow-500">HILAL MOON B12</span>
-               <div class="w-px h-3 bg-white/20"></div>
-               <i data-lucide="sunset" class="text-orange-400 w-3 h-3"></i>
-               <span id="sunset-display" class="text-[10px] text-orange-400 font-bold">SUNSET: 18:10</span>
+        <!-- Jam & Informasi Target (Dipindah agak ke bawah) -->
+        <div class="absolute top-12 left-1/2 -translate-x-1/2 text-center pointer-events-none w-full">
+            <div id="clock-display" class="text-4xl font-black text-white tracking-[0.2em] drop-shadow-lg">00:00:00</div>
+            <div class="mt-4 flex justify-center gap-4">
+                <div class="px-4 py-1 bg-black/80 border border-yellow-500/50 rounded-md flex items-center gap-2">
+                   <span class="text-[10px] text-gray-400 uppercase">Target: </span>
+                   <span id="target-name" class="text-[10px] font-bold text-yellow-500">MOON / HILAL</span>
+                </div>
+                <div class="px-4 py-1 bg-black/80 border border-orange-500/50 rounded-md flex items-center gap-2">
+                   <i data-lucide="sunset" class="text-orange-400 w-3 h-3"></i>
+                   <span id="sunset-display" class="text-[10px] text-orange-400 font-bold">MAGHRIB: 18:12</span>
+                </div>
             </div>
-            <div id="clock-display" class="mt-2 text-2xl font-black text-white tracking-widest">00:00:00</div>
         </div>
 
-        <!-- Panel Kontrol Bawah -->
-        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-xl flex flex-col gap-4">
-            <div class="grid grid-cols-3 gap-2 p-2 rounded-lg border border-red-900/50 bg-red-950/20 text-center">
-                <div>
-                    <p class="text-[8px] opacity-60 text-white uppercase">Prediksi Alt</p>
-                    <p id="target-alt" class="text-xs font-bold text-white">0.0°</p>
+        <!-- Panel Kontrol Bawah (Dinaikkan sedikit) -->
+        <div class="absolute bottom-12 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl flex flex-col gap-4">
+            <!-- Data Simulasi Elongasi -->
+            <div class="grid grid-cols-4 gap-2 p-3 rounded-xl border border-white/10 bg-black/80 text-center backdrop-blur-lg">
+                <div class="border-r border-white/5">
+                    <p class="text-[8px] opacity-60 text-white">ELONGASI</p>
+                    <p id="target-elong" class="text-sm font-bold text-yellow-500">0.0°</p>
                 </div>
-                <div class="border-x border-white/10">
-                    <p class="text-[8px] opacity-60 text-white uppercase">Elongasi</p>
-                    <p id="target-elong" class="text-xs font-bold text-yellow-500">6.8°</p>
+                <div class="border-r border-white/5">
+                    <p class="text-[8px] opacity-60 text-white">JARAK SUDUT</p>
+                    <p id="target-dist" class="text-sm font-bold text-white">0.0°</p>
+                </div>
+                <div class="border-r border-white/5">
+                    <p class="text-[8px] opacity-60 text-white">FRAKSI</p>
+                    <p id="moon-phase" class="text-sm font-bold text-white">0.8%</p>
                 </div>
                 <div>
-                    <p class="text-[8px] opacity-60 text-white uppercase">Posisi Matahari</p>
-                    <p id="maghrib-info" class="text-[9px] font-bold text-orange-400">MAGHRIB 18:10</p>
+                    <p class="text-[8px] opacity-60 text-white">UMUR BULAN</p>
+                    <p id="moon-age" class="text-sm font-bold text-white">14j 22m</p>
                 </div>
             </div>
 
-            <div class="p-4 rounded-2xl border border-red-900/50 bg-red-950/20 backdrop-blur-2xl pointer-events-auto shadow-2xl">
-                <div class="flex items-center gap-4">
-                    <button onclick="adjustTime(-60)" class="p-2 border border-white/10 rounded-lg text-white"><i data-lucide="chevron-left"></i></button>
-                    <div class="flex-1">
-                        <input id="time-slider" type="range" min="-720" max="720" value="0" class="w-full h-1 rounded-lg appearance-none cursor-pointer bg-red-900/30 accent-red-500">
-                        <div class="flex justify-between mt-2 text-[9px] font-bold">
-                            <span class="opacity-40 text-white">-12 JAM</span>
-                            <span id="mode-status" class="text-red-500 uppercase">Mode Real-Time</span>
-                            <span class="opacity-40 text-white">+12 JAM</span>
+            <!-- Slider Kontrol Waktu & Hari -->
+            <div class="p-5 rounded-2xl border border-white/10 bg-black/90 backdrop-blur-3xl pointer-events-auto shadow-2xl">
+                <div class="flex flex-col gap-4">
+                    <!-- Simulasi Jam -->
+                    <div class="flex items-center gap-4">
+                        <i data-lucide="clock" class="text-gray-500 w-4 h-4"></i>
+                        <div class="flex-1 relative">
+                            <input id="time-slider" type="range" min="-720" max="720" value="0" class="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-800 accent-yellow-500">
+                            <div class="flex justify-between mt-2 text-[9px] text-gray-500 font-bold">
+                                <span>-12H</span>
+                                <span id="mode-status" class="text-yellow-500">MODE REAL-TIME</span>
+                                <span>+12H</span>
+                            </div>
+                        </div>
+                        <button onclick="resetTime()" class="p-2 bg-white/5 rounded-lg text-white active:bg-yellow-500 active:text-black transition-colors">
+                            <i data-lucide="rotate-ccw" size="18"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Simulasi Hari -->
+                    <div class="flex items-center gap-4">
+                        <i data-lucide="calendar" class="text-gray-500 w-4 h-4"></i>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center bg-white/5 p-2 rounded-lg">
+                                <button onclick="adjustDay(-1)" class="text-white px-3 border-r border-white/10 hover:text-yellow-500"><i data-lucide="minus" size="16"></i></button>
+                                <span id="date-display" class="text-xs font-bold text-white uppercase tracking-widest">24 JAN 2026</span>
+                                <button onclick="adjustDay(1)" class="text-white px-3 border-l border-white/10 hover:text-yellow-500"><i data-lucide="plus" size="16"></i></button>
+                            </div>
                         </div>
                     </div>
-                    <button onclick="adjustTime(60)" class="p-2 border border-white/10 rounded-lg text-white"><i data-lucide="chevron-right"></i></button>
-                    <button onclick="resetTime()" class="p-2 bg-white/10 rounded-lg text-white"><i data-lucide="rotate-ccw" size="18"></i></button>
                 </div>
             </div>
         </div>
 
         <!-- Overlay Izin -->
         <div id="overlay" class="absolute inset-0 z-[100] bg-black flex items-center justify-center p-10 text-center">
-            <div class="max-w-xs">
-                <div class="w-20 h-20 mx-auto mb-8 rounded-full border-2 border-red-900/50 flex items-center justify-center animate-pulse shadow-[0_0_30px_rgba(255,0,0,0.2)] text-white">
-                    <i data-lucide="target" size="40"></i>
+            <div class="max-w-sm">
+                <div class="w-24 h-24 mx-auto mb-8 rounded-full border border-yellow-500/50 flex items-center justify-center text-yellow-500 shadow-[0_0_50px_rgba(245,158,11,0.2)]">
+                    <i data-lucide="compass" size="48"></i>
                 </div>
-                <h2 class="text-xl font-black text-white mb-4 tracking-tighter italic uppercase">Sistem Falak Digital</h2>
-                <p class="text-xs leading-relaxed opacity-60 mb-10 text-white">Aplikasi membutuhkan data lokasi dan sensor giroskop untuk menentukan waktu Sunset dan posisi Hilal.</p>
-                <button onclick="initApp()" class="w-full py-4 rounded-full font-black text-black text-sm tracking-widest bg-red-500 shadow-[0_0_20px_red] transition-all hover:scale-105 active:scale-95">
-                    MULAI NAVIGASI
+                <h2 class="text-2xl font-black text-white mb-2 tracking-tighter uppercase">Instrumen Falak Digital</h2>
+                <p class="text-[11px] leading-relaxed text-gray-500 mb-10">Gunakan Matahari sebagai titik kalibrasi untuk sinkronisasi sensor yang presisi. Aplikasi ini mensimulasikan posisi Hilal berdasarkan data Astronomis.</p>
+                <button onclick="initApp()" class="w-full py-5 rounded-xl font-bold text-black text-sm tracking-[0.3em] bg-yellow-500 shadow-[0_10px_30px_rgba(245,158,11,0.4)] active:scale-95 transition-all">
+                    SINKRONISASI SISTEM
                 </button>
             </div>
         </div>
@@ -168,28 +209,36 @@
 
     <script>
         let orientation = { alpha: 0, beta: 0 };
+        let calOffset = { alpha: 0, beta: 0 };
         let simulatedTime = new Date();
         let isAutoTime = true;
-        let isLocked = false;
-        let nightMode = true;
+        let currentTarget = 'moon'; // 'moon' or 'sun'
+        const canvas = document.getElementById('overlay-canvas');
+        const ctx = canvas.getContext('2d');
 
         // Initialize Lucid Icons
         lucide.createIcons();
 
-        // Generate Azimuth Scale
+        // Generate Azimuth Scale with more labels
         const scale = document.getElementById('az-scale');
-        for (let i = 0; i < 72; i++) {
+        for (let i = 0; i <= 360; i += 5) {
             const div = document.createElement('div');
-            div.className = 'flex flex-col items-center w-[40px] shrink-0 text-white';
+            div.className = 'flex flex-col items-center w-[60px] shrink-0 text-white';
+            const isMajor = i % 15 === 0;
             div.innerHTML = `
-                <div class="w-px ${i % 9 === 0 ? 'h-5 bg-white' : 'h-2 bg-white/30'}"></div>
-                ${i % 9 === 0 ? `<span class="text-[8px] mt-1">${i * 5}°</span>` : ''}
+                <div class="w-px ${isMajor ? 'h-6 bg-yellow-500' : 'h-3 bg-white/30'}"></div>
+                ${isMajor ? `<span class="text-[10px] mt-1 font-bold">${i}°</span>` : ''}
+                ${i === 0 ? '<span class="text-[10px] font-black text-red-500">UTARA</span>' : ''}
+                ${i === 90 ? '<span class="text-[10px] font-black text-blue-400">TIMUR</span>' : ''}
+                ${i === 180 ? '<span class="text-[10px] font-black text-green-400">SELATAN</span>' : ''}
+                ${i === 270 ? '<span class="text-[10px] font-black text-orange-400">BARAT</span>' : ''}
             `;
             scale.appendChild(div);
         }
 
         function initApp() {
             document.getElementById('overlay').classList.add('hidden');
+            resizeCanvas();
             startCamera();
             startGPS();
             
@@ -200,6 +249,12 @@
             } else {
                 window.addEventListener('deviceorientation', handleOrientation);
             }
+            window.addEventListener('resize', resizeCanvas);
+        }
+
+        function resizeCanvas() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
         }
 
         async function startCamera() {
@@ -207,7 +262,7 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 document.getElementById('video').srcObject = stream;
             } catch (err) {
-                console.error("Kamera gagal:", err);
+                console.error("Kamera akses ditolak");
             }
         }
 
@@ -219,43 +274,120 @@
         }
 
         function handleOrientation(e) {
-            if (isLocked) return;
-            orientation.beta = e.beta ? (e.beta - 90).toFixed(1) : 0;
-            orientation.alpha = e.alpha ? (360 - e.alpha).toFixed(1) : 0;
+            let az = e.alpha ? (360 - e.alpha) : 0;
+            let alt = e.beta ? (e.beta - 90) : 0;
+            
+            orientation.alpha = (az + calOffset.alpha) % 360;
+            orientation.beta = alt + calOffset.beta;
             updateUI();
         }
 
+        function setTarget(type) {
+            currentTarget = type;
+            document.getElementById('target-name').innerText = type === 'moon' ? 'MOON / HILAL' : 'SUN / MATAHARI';
+            document.getElementById('btn-moon').className = type === 'moon' ? 'p-3 rounded-lg bg-yellow-500 text-black' : 'p-3 rounded-lg hover:bg-white/10 text-white';
+            document.getElementById('btn-sun').className = type === 'sun' ? 'p-3 rounded-lg bg-yellow-500 text-black' : 'p-3 rounded-lg hover:bg-white/10 text-white';
+        }
+
+        function calibrateSensor() {
+            // Gunakan posisi matahari saat ini untuk mengkalibrasi sensor
+            const sunPos = calculateSun(simulatedTime);
+            // Hitung selisih antara pembacaan sensor mentah dan posisi astronomis
+            // offset = astronomis - sensor
+            calOffset.alpha = (sunPos.azimuth - (orientation.alpha - calOffset.alpha));
+            calOffset.beta = (sunPos.altitude - (orientation.beta - calOffset.beta));
+            
+            alert("Sistem Berhasil Dikalibrasi ke Matahari");
+        }
+
         function updateUI() {
-            document.getElementById('az-display').innerText = orientation.alpha + "°";
-            document.getElementById('alt-display').innerText = orientation.beta + "°";
-            document.getElementById('alt-val').innerText = Math.abs(orientation.beta) + "°";
+            document.getElementById('az-display').innerText = orientation.alpha.toFixed(1) + "°";
+            document.getElementById('alt-display').innerText = orientation.beta.toFixed(1) + "°";
+            document.getElementById('alt-val').innerText = orientation.beta.toFixed(1) + "°";
             document.getElementById('alt-indicator').style.top = `${50 - orientation.beta * 2}%`;
             document.getElementById('az-scale').style.transform = `translateX(-${orientation.alpha * 4}px)`;
 
+            const sunPos = calculateSun(simulatedTime);
             const moonPos = calculateMoon(simulatedTime);
-            document.getElementById('target-alt').innerText = moonPos.altitude + "°";
+            
+            const activeTarget = currentTarget === 'moon' ? moonPos : sunPos;
             document.getElementById('target-elong').innerText = moonPos.elongation + "°";
+            
+            // Jarak sudut antara target dan arah kamera
+            const distToTarget = Math.sqrt(Math.pow(orientation.alpha - activeTarget.azimuth, 2) + Math.pow(orientation.beta - activeTarget.altitude, 2));
+            document.getElementById('target-dist').innerText = distToTarget.toFixed(1) + "°";
 
-            const diffAz = Math.abs(orientation.alpha - moonPos.azimuth);
-            const diffAlt = Math.abs(Math.abs(orientation.beta) - moonPos.altitude);
-            const crosshair = document.getElementById('crosshair');
-            if (diffAz < 3 && diffAlt < 3) {
-                crosshair.classList.add('border-yellow-500', 'scale-110', 'opacity-100');
-                crosshair.classList.remove('border-white/20', 'opacity-30');
+            drawAR(sunPos, moonPos);
+        }
+
+        function drawAR(sun, moon) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Konversi Az/Alt ke Koordinat Layar (Simulasi sederhana)
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const scaleFactor = 40; // pixel per degree
+
+            const getScreenPos = (pos) => {
+                const dx = (pos.azimuth - orientation.alpha) * scaleFactor;
+                const dy = (orientation.beta - pos.altitude) * scaleFactor;
+                return { x: centerX + dx, y: centerY + dy };
+            };
+
+            const sunScreen = getScreenPos(sun);
+            const moonScreen = getScreenPos(moon);
+
+            // Gambar Garis Elongasi (Busur)
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+            ctx.lineWidth = 1;
+            ctx.moveTo(sunScreen.x, sunScreen.y);
+            ctx.lineTo(moonScreen.x, moonScreen.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Gambar Matahari
+            ctx.fillStyle = "rgba(255, 165, 0, 0.6)";
+            ctx.beginPath();
+            ctx.arc(sunScreen.x, sunScreen.y, 15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Gambar Bulan/Hilal
+            ctx.fillStyle = "rgba(255, 255, 0, 0.8)";
+            ctx.beginPath();
+            ctx.arc(moonScreen.x, moonScreen.y, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Highlight Target Aktif
+            const activePos = currentTarget === 'moon' ? moonScreen : sunScreen;
+            const pointer = document.getElementById('target-pointer');
+            if (activePos.x > 0 && activePos.x < canvas.width && activePos.y > 0 && activePos.y < canvas.height) {
+                pointer.style.opacity = "1";
+                pointer.style.transform = `translate(${activePos.x - centerX}px, ${activePos.y - centerY}px)`;
             } else {
-                crosshair.classList.remove('border-yellow-500', 'scale-110', 'opacity-100');
-                crosshair.classList.add('border-white/20', 'opacity-30');
+                pointer.style.opacity = "0";
             }
         }
 
-        function calculateMoon(time) {
-            const hours = time.getHours() + time.getMinutes() / 60;
-            const sunset = 18.16; // 18:10
-            const diff = hours - sunset;
+        function calculateSun(time) {
+            const h = time.getHours() + time.getMinutes() / 60;
+            // Simulasi gerak matahari (Terbit timur 06:00, terbenam barat 18:00)
             return {
-                azimuth: ((265 + diff * 15) % 360).toFixed(1),
-                altitude: (8.5 - (diff * diff * 3)).toFixed(1),
-                elongation: (6.8 + diff * 0.1).toFixed(1)
+                azimuth: (90 + (h - 6) * 15) % 360,
+                altitude: 90 * Math.sin((h - 6) * Math.PI / 12)
+            };
+        }
+
+        function calculateMoon(time) {
+            const sun = calculateSun(time);
+            const h = time.getHours() + time.getMinutes() / 60;
+            const sunset = 18.2;
+            const diff = h - sunset;
+            return {
+                azimuth: (sun.azimuth + 5 + diff * 0.5) % 360,
+                altitude: (sun.altitude + 8.5 - (diff * diff * 2)),
+                elongation: (7.2 + diff * 0.1).toFixed(1)
             };
         }
 
@@ -265,34 +397,46 @@
             updateTimeDisplay();
         }
 
+        function adjustDay(days) {
+            isAutoTime = false;
+            simulatedTime.setDate(simulatedTime.getDate() + days);
+            updateTimeDisplay();
+        }
+
         function resetTime() {
             isAutoTime = true;
             simulatedTime = new Date();
             updateTimeDisplay();
         }
 
+        function takePhoto() {
+            const video = document.getElementById('video');
+            const captureCanvas = document.createElement('canvas');
+            captureCanvas.width = video.videoWidth;
+            captureCanvas.height = video.videoHeight;
+            const cctx = captureCanvas.getContext('2d');
+            cctx.drawImage(video, 0, 0);
+            
+            // Simulasi flash
+            const overlay = document.createElement('div');
+            overlay.className = "fixed inset-0 bg-white z-[200] pointer-events-none opacity-0 transition-opacity duration-100";
+            document.body.appendChild(overlay);
+            setTimeout(() => overlay.style.opacity = "1", 10);
+            setTimeout(() => {
+                overlay.style.opacity = "0";
+                setTimeout(() => overlay.remove(), 100);
+            }, 100);
+
+            console.log("Foto Berhasil Diambil");
+        }
+
         function updateTimeDisplay() {
             document.getElementById('clock-display').innerText = simulatedTime.toLocaleTimeString('id-ID', { hour12: false });
-            document.getElementById('mode-status').innerText = isAutoTime ? "Mode Real-Time" : "Simulasi: " + simulatedTime.toLocaleDateString('id-ID', {day:'numeric', month:'short'});
+            document.getElementById('mode-status').innerText = isAutoTime ? "MODE REAL-TIME" : "SIMULASI AKTIF";
+            document.getElementById('date-display').innerText = simulatedTime.toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
             updateUI();
         }
 
-        function toggleLock() {
-            isLocked = !isLocked;
-            const btn = document.getElementById('lock-btn');
-            btn.innerHTML = isLocked ? '<i data-lucide="lock" size="18"></i>' : '<i data-lucide="unlock" size="18"></i>';
-            btn.classList.toggle('bg-red-500');
-            btn.classList.toggle('text-black');
-            lucide.createIcons();
-        }
-
-        function toggleNightMode() {
-            nightMode = !nightMode;
-            document.body.className = nightMode ? 'night-mode' : 'day-mode';
-            // Update colors logic simplified for pure CSS theme toggle
-        }
-
-        // Slider listener
         document.getElementById('time-slider').addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             const now = new Date();
@@ -301,7 +445,6 @@
             updateTimeDisplay();
         });
 
-        // Main Loop
         setInterval(() => {
             if (isAutoTime) {
                 simulatedTime = new Date();
