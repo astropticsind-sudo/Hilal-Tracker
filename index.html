@@ -8,62 +8,104 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; color: #00ffcc; font-family: 'Courier New', Courier, monospace; }
-        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 10; pointer-events: none; }
+        
+        /* Lapisan Kamera & Canvas */
         #video-feed { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 10; pointer-events: none; }
+        
+        /* Container UI (HUD) */
         .hud-container { position: absolute; width: 100%; height: 100%; z-index: 20; pointer-events: none; }
         
-        /* UI Elements */
-        .top-bar { position: absolute; top: 0; left: 0; width: 100%; padding: 10px; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); display: flex; justify-content: space-between; align-items: flex-start; pointer-events: auto; }
-        .bottom-controls { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px; padding-bottom: 40px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: auto; }
-        
-        .data-box { background: rgba(0, 20, 0, 0.5); border: 1px solid #00ffcc; padding: 5px 10px; border-radius: 4px; font-size: 12px; text-shadow: 0 0 5px #00ffcc; margin-bottom: 5px; }
-        
-        .btn-action { 
-            background: rgba(0, 50, 50, 0.6); border: 1px solid #00ffcc; color: #00ffcc; 
-            padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; 
-            text-transform: uppercase; transition: 0.3s; font-size: 14px;
-            box-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
-            pointer-events: auto;
+        /* Elemen UI Atas */
+        .top-bar { 
+            position: absolute; top: 0; left: 0; width: 100%; padding: 15px; 
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); 
+            display: flex; justify-content: space-between; align-items: flex-start; 
+            pointer-events: auto; 
         }
-        .btn-action:active, .btn-action.active { background: #00ffcc; color: #000; box-shadow: 0 0 20px #00ffcc; }
         
-        .shutter-btn {
-            width: 70px; height: 70px; border-radius: 50%; border: 3px solid #fff;
-            background: rgba(255,255,255,0.2); cursor: pointer; pointer-events: auto;
+        /* Kotak Data */
+        .data-box { 
+            background: rgba(0, 20, 0, 0.6); border: 1px solid #00ffcc; 
+            padding: 5px 12px; border-radius: 4px; font-size: 12px; font-weight: bold;
+            text-shadow: 0 0 5px #00ffcc; margin-bottom: 5px; 
+        }
+        
+        /* Crosshair Statis (Tengah Layar) */
+        .crosshair {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            pointer-events: none; z-index: 30;
+        }
+        .crosshair-circle {
+            width: 60px; height: 60px; border: 2px solid rgba(0, 255, 204, 0.8);
+            border-radius: 50%; box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
             display: flex; justify-content: center; align-items: center;
         }
-        .shutter-btn:active { background: rgba(255,255,255,0.8); }
+        .crosshair-dot {
+            width: 4px; height: 4px; background: #ff3333; border-radius: 50%;
+            box-shadow: 0 0 5px #ff0000;
+        }
+        .crosshair-line-h { position: absolute; width: 80px; height: 1px; background: rgba(0,255,204,0.5); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .crosshair-line-v { position: absolute; width: 1px; height: 80px; background: rgba(0,255,204,0.5); top: 50%; left: 50%; transform: translate(-50%, -50%); }
 
-        .voice-btn-container {
-            display: flex; flex-direction: column; align-items: center; margin-bottom: 10px;
+        /* Kontrol Bawah */
+        .bottom-controls { 
+            position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px; padding-bottom: 40px; 
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); 
+            display: flex; flex-direction: column; align-items: center; gap: 15px; 
+            pointer-events: auto; 
         }
-        .voice-label {
-            font-size: 10px; color: #fff; margin-top: 4px; text-shadow: 0 0 2px black;
-            opacity: 0.8; letter-spacing: 1px;
+        
+        /* Tombol Aksi (Find Sun/Moon) */
+        .btn-action { 
+            background: rgba(0, 50, 50, 0.6); border: 1px solid #00ffcc; color: #00ffcc; 
+            padding: 12px 25px; border-radius: 30px; cursor: pointer; font-weight: bold; 
+            text-transform: uppercase; transition: all 0.3s; font-size: 14px;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.1);
         }
+        .btn-action:active, .btn-action.active { 
+            background: #00ffcc; color: #000; box-shadow: 0 0 20px #00ffcc; 
+        }
+
+        /* Tombol Shutter */
+        .shutter-btn {
+            width: 70px; height: 70px; border-radius: 50%; border: 3px solid #fff;
+            background: rgba(255,255,255,0.2); cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            transition: 0.2s;
+        }
+        .shutter-btn:active { background: rgba(255,255,255,0.8); transform: scale(0.95); }
+
+        /* Tombol Suara */
+        .voice-container { display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .mic-btn {
-            width: 40px; height: 40px; border-radius: 50%; border: 1px solid #00ffcc;
-            background: rgba(0,0,0,0.5); color: #00ffcc; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; pointer-events: auto; transition: 0.3s;
+            width: 45px; height: 45px; border-radius: 50%; border: 1px solid #00ffcc;
+            background: rgba(0,0,0,0.6); color: #00ffcc; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; transition: 0.3s; font-size: 18px;
         }
         .mic-btn.listening { background: #ff3333; border-color: #ff3333; color: white; animation: pulse 1.5s infinite; }
+        .voice-label {
+            font-size: 10px; color: #fff; margin-top: 5px; text-shadow: 0 0 2px black;
+            text-align: center; opacity: 0.9; letter-spacing: 0.5px;
+        }
 
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 51, 51, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0); } }
 
-        /* Guide Arrows */
+        /* Panah Penunjuk (Find Feature) */
         .guide-arrow {
             position: absolute; width: 0; height: 0; 
-            border-left: 15px solid transparent; border-right: 15px solid transparent;
             z-index: 15; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+            filter: drop-shadow(0 0 5px #000);
         }
-        .guide-arrow.up { border-bottom: 25px solid #ffcc00; top: 20%; left: 50%; transform: translateX(-50%); }
-        .guide-arrow.down { border-top: 25px solid #ffcc00; bottom: 20%; left: 50%; transform: translateX(-50%); }
-        .guide-arrow.left { border-right: 25px solid #ffcc00; left: 10%; top: 50%; transform: translateY(-50%); }
-        .guide-arrow.right { border-left: 25px solid #ffcc00; right: 10%; top: 50%; transform: translateY(-50%); }
+        .guide-arrow.up { border-left: 20px solid transparent; border-right: 20px solid transparent; border-bottom: 30px solid #ffcc00; top: 15%; left: 50%; transform: translateX(-50%); }
+        .guide-arrow.down { border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 30px solid #ffcc00; bottom: 25%; left: 50%; transform: translateX(-50%); }
+        .guide-arrow.left { border-top: 20px solid transparent; border-bottom: 20px solid transparent; border-right: 30px solid #ffcc00; left: 5%; top: 50%; transform: translateY(-50%); }
+        .guide-arrow.right { border-top: 20px solid transparent; border-bottom: 20px solid transparent; border-left: 30px solid #ffcc00; right: 5%; top: 50%; transform: translateY(-50%); }
 
+        /* Modal Izin */
         #permission-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; p: 20px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;
         }
     </style>
 </head>
@@ -71,18 +113,18 @@
 
     <!-- Permission Modal -->
     <div id="permission-modal">
-        <h2 class="text-2xl text-cyan-400 mb-4"><i class="fas fa-satellite-dish"></i> AstroCam AR</h2>
-        <p class="text-gray-300 mb-6 max-w-md px-4">Izinkan akses Kamera dan Sensor Orientasi untuk menggunakan fitur AR dan kompas astronomi.</p>
-        <button onclick="startApp()" class="btn-action" style="font-size: 18px; padding: 15px 40px;">MULAI / KALIBRASI</button>
+        <h2 class="text-3xl text-cyan-400 mb-2 font-bold"><i class="fas fa-space-shuttle"></i> AstroCam</h2>
+        <p class="text-gray-400 mb-8 max-w-xs">Aplikasi Kamera AR Astronomi. Izinkan akses untuk melanjutkan.</p>
+        <button onclick="startApp()" class="btn-action" style="font-size: 16px; padding: 15px 40px; border-width: 2px;">MULAI KAMERA</button>
     </div>
 
     <!-- Video Background -->
     <video id="video-feed" autoplay playsinline muted></video>
 
-    <!-- AR Canvas Layer -->
+    <!-- AR Canvas Layer (Grid & Labels) -->
     <canvas id="ar-canvas"></canvas>
 
-    <!-- Guide Arrows (Visual cues to turn phone) -->
+    <!-- Guide Arrows -->
     <div id="arrow-up" class="guide-arrow up"></div>
     <div id="arrow-down" class="guide-arrow down"></div>
     <div id="arrow-left" class="guide-arrow left"></div>
@@ -90,6 +132,15 @@
 
     <!-- HUD Container -->
     <div class="hud-container">
+        <!-- Crosshair (Titik Tengah) -->
+        <div class="crosshair">
+            <div class="crosshair-line-h"></div>
+            <div class="crosshair-line-v"></div>
+            <div class="crosshair-circle">
+                <div class="crosshair-dot"></div>
+            </div>
+        </div>
+
         <!-- Top Info -->
         <div class="top-bar">
             <div>
@@ -97,41 +148,41 @@
                 <div class="data-box" id="orientation">Az: 0° | Alt: 0°</div>
             </div>
             <div class="text-right">
-                <div class="data-box text-yellow-400" id="sun-data">Sun: --</div>
-                <div class="data-box text-gray-300" id="moon-data">Moon: --</div>
+                <div class="data-box text-yellow-400" id="sun-data">SUN: --</div>
+                <div class="data-box text-gray-300" id="moon-data">MOON: --</div>
             </div>
         </div>
-
-        <!-- Center Crosshair (Static HTML fallback if canvas fails, but we draw on canvas usually) -->
-        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width: 40px; height: 40px; border: 1px solid rgba(0,255,204,0.3); pointer-events:none;"></div>
-        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width: 4px; height: 4px; background: #ff3333; border-radius:50%; pointer-events:none;"></div>
 
         <!-- Bottom Controls -->
         <div class="bottom-controls">
             
-            <!-- Target Selection -->
-            <div class="flex gap-4 mb-4">
-                <button id="btn-sun" class="btn-action" onclick="toggleTarget('sun')"><i class="fas fa-sun"></i> FIND THE SUN</button>
-                <button id="btn-moon" class="btn-action" onclick="toggleTarget('moon')"><i class="fas fa-moon"></i> FIND THE MOON</button>
+            <!-- Target Buttons -->
+            <div class="flex gap-4 w-full justify-center px-4">
+                <button id="btn-sun" class="btn-action flex-1 max-w-[160px]" onclick="toggleTarget('sun')">
+                    <i class="fas fa-sun mr-2"></i> FIND THE SUN
+                </button>
+                <button id="btn-moon" class="btn-action flex-1 max-w-[160px]" onclick="toggleTarget('moon')">
+                    <i class="fas fa-moon mr-2"></i> FIND THE MOON
+                </button>
             </div>
 
-            <!-- Voice & Shutter -->
-            <div class="flex items-center gap-6">
-                <!-- Voice Trigger -->
-                <div class="voice-btn-container">
+            <!-- Main Controls Row -->
+            <div class="flex items-center justify-between w-full max-w-sm px-4 mt-2">
+                <!-- Voice Button -->
+                <div class="voice-container">
                     <button id="btn-voice" class="mic-btn" onclick="toggleVoice()">
                         <i class="fas fa-microphone"></i>
                     </button>
-                    <span class="voice-label">KATAKAN "AMBIL"<br>UNTUK MEMOTRET</span>
+                    <span class="voice-label">KATAKAN AMBIL<br>UNTUK MEMOTRET</span>
                 </div>
 
-                <!-- Main Shutter -->
+                <!-- Shutter Button -->
                 <button class="shutter-btn" onclick="takePhoto()">
-                    <div style="width: 50px; height: 50px; background: white; border-radius: 50%;"></div>
+                    <div style="width: 55px; height: 55px; background: white; border-radius: 50%;"></div>
                 </button>
                 
-                <!-- Spacer for balance -->
-                <div style="width: 50px;"></div> 
+                <!-- Placeholder for balance -->
+                <div style="width: 45px;"></div> 
             </div>
         </div>
     </div>
@@ -139,10 +190,10 @@
     <script>
         // --- State Management ---
         const state = {
-            tracking: null, // 'sun' or 'moon' or null
+            tracking: null, // 'sun' or 'moon'
             azimuth: 0,     // Compass heading (0-360)
             altitude: 0,    // Pitch (-90 to 90)
-            lat: -6.9175,   // Default (Bandung)
+            lat: -6.9175,   // Default
             lon: 107.6191,
             sunPos: { az: 0, alt: 0 },
             moonPos: { az: 0, alt: 0 },
@@ -157,11 +208,13 @@
         const elOrient = document.getElementById('orientation');
         const elSun = document.getElementById('sun-data');
         const elMoon = document.getElementById('moon-data');
-        const arrowUp = document.getElementById('arrow-up');
-        const arrowDown = document.getElementById('arrow-down');
-        const arrowLeft = document.getElementById('arrow-left');
-        const arrowRight = document.getElementById('arrow-right');
         const btnVoice = document.getElementById('btn-voice');
+        const arrows = {
+            up: document.getElementById('arrow-up'),
+            down: document.getElementById('arrow-down'),
+            left: document.getElementById('arrow-left'),
+            right: document.getElementById('arrow-right')
+        };
 
         // --- Initialization ---
         function startApp() {
@@ -174,7 +227,7 @@
             window.addEventListener('resize', resizeCanvas);
             resizeCanvas();
             requestAnimationFrame(renderLoop);
-            setInterval(updateAstroPositions, 1000); // Update astro calc every second
+            setInterval(updateAstroPositions, 1000); 
         }
 
         function resizeCanvas() {
@@ -190,11 +243,12 @@
                 });
                 video.srcObject = stream;
             } catch (err) {
-                alert("Gagal akses kamera: " + err.message);
+                console.warn("Camera access failed", err);
+                // Fallback for desktop testing
             }
         }
 
-        // --- Voice Recognition Setup ---
+        // --- Voice Recognition ---
         let recognition;
         function initVoice() {
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -207,100 +261,72 @@
                 recognition.onresult = (event) => {
                     const last = event.results.length - 1;
                     const transcript = event.results[last][0].transcript.trim().toLowerCase();
-                    console.log("Voice heard:", transcript);
+                    console.log("Heard:", transcript);
 
-                    if (transcript.includes('ambil') || transcript.includes('foto') || transcript.includes('cekrek')) {
+                    if (transcript.includes('ambil') || transcript.includes('foto') || transcript.includes('potret')) {
                         flashScreen();
                         takePhoto();
                     }
                 };
-
-                recognition.onerror = (event) => {
-                    console.log('Voice error:', event.error);
-                    state.listening = false;
-                    updateVoiceUI();
-                };
                 
-                recognition.onend = () => {
-                    if (state.listening) recognition.start(); // Auto restart if supposed to be listening
-                };
+                recognition.onend = () => { if (state.listening) recognition.start(); };
+                recognition.onerror = () => { state.listening = false; updateVoiceUI(); };
+
             } else {
-                alert("Browser ini tidak mendukung Voice Recognition.");
+                alert("Browser tidak mendukung sensor suara.");
                 btnVoice.style.display = 'none';
+                document.querySelector('.voice-label').style.display = 'none';
             }
         }
 
         function toggleVoice() {
             if (!recognition) initVoice();
-            
             state.listening = !state.listening;
             updateVoiceUI();
-            
-            if (state.listening) {
-                recognition.start();
-            } else {
-                recognition.stop();
-            }
+            if (state.listening) recognition.start();
+            else recognition.stop();
         }
 
         function updateVoiceUI() {
-            if (state.listening) {
-                btnVoice.classList.add('listening');
-            } else {
-                btnVoice.classList.remove('listening');
-            }
+            if (state.listening) btnVoice.classList.add('listening');
+            else btnVoice.classList.remove('listening');
         }
 
-        function flashScreen() {
-            const flash = document.createElement('div');
-            flash.style.position = 'fixed';
-            flash.style.top = '0'; flash.style.left = '0';
-            flash.style.width = '100%'; flash.style.height = '100%';
-            flash.style.background = 'white';
-            flash.style.zIndex = '1000';
-            flash.style.opacity = '0.8';
-            flash.style.transition = 'opacity 0.2s';
-            document.body.appendChild(flash);
-            setTimeout(() => { flash.style.opacity = '0'; }, 50);
-            setTimeout(() => { flash.remove(); }, 250);
-        }
-
-        // --- Sensor Setup (Compass & Gyro) ---
+        // --- Sensors ---
         function initSensors() {
             if (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission === 'function') {
-                // iOS 13+ logic
                 window.DeviceOrientationEvent.requestPermission()
-                    .then(response => {
-                        if (response === 'granted') {
-                            window.addEventListener('deviceorientation', handleOrientation);
-                        } else {
-                            alert("Izin sensor ditolak.");
-                        }
-                    })
+                    .then(r => { if(r==='granted') window.addEventListener('deviceorientation', handleOrientation); })
                     .catch(console.error);
             } else {
-                // Android / Non-iOS
-                window.addEventListener('deviceorientationabsolute', handleOrientation, true); // Try absolute first
+                window.addEventListener('deviceorientationabsolute', handleOrientation, true);
                 window.addEventListener('deviceorientation', handleOrientation, true);
             }
         }
 
         function handleOrientation(e) {
+            // Compass
             let compass = e.webkitCompassHeading || Math.abs(e.alpha - 360);
-            
-            // Android fallback logic (simplified) if webkitCompassHeading not available
-            if (!e.webkitCompassHeading && e.alpha) {
-                compass = 360 - e.alpha; 
-            }
-
+            if (!e.webkitCompassHeading && e.alpha) compass = 360 - e.alpha;
             state.azimuth = compass % 360;
-            // Beta is usually pitch (-180 to 180). We clamp for easier display.
-            // In portrait mode held up: Beta is roughly 90. Horizon is 90.
-            // We need to map sensor beta to "Camera Pitch".
-            // Typically: 90 deg = Horizon. 
-            state.altitude = e.beta; 
+
+            // Pitch (Altitude)
+            // Portrait mode: beta is roughly tilt. 90 is upright.
+            // We want 0 at horizon (phone upright).
+            // Usually beta is 90 when upright. So Altitude = Beta - 90.
+            // BUT, for AR apps, we usually take 'beta' directly if holding upright is 90?
+            // Let's calibrate: 
+            // If phone is vertical (camera looking at horizon), beta is ~90.
+            // We want this to display as "0 degrees alt".
+            // So: displayAlt = beta - 90.
+            let rawBeta = e.beta;
+            // Clamping for usability
+            if (rawBeta === null) rawBeta = 90; 
             
-            // Update UI
+            // Adjust so 0 is Horizon
+            state.altitude = rawBeta - 90;
+
+            // Stabilize/Smooth could go here, but raw is faster
             elOrient.innerText = `Az: ${Math.round(state.azimuth)}° | Alt: ${Math.round(state.altitude)}°`;
         }
 
@@ -309,103 +335,69 @@
                 navigator.geolocation.getCurrentPosition(pos => {
                     state.lat = pos.coords.latitude;
                     state.lon = pos.coords.longitude;
-                    elCoords.innerText = `Lat: ${state.lat.toFixed(2)} Lon: ${state.lon.toFixed(2)}`;
+                    elCoords.innerText = `Lat: ${state.lat.toFixed(2)} | Lon: ${state.lon.toFixed(2)}`;
                     updateAstroPositions();
                 });
             }
         }
 
-        // --- Astro Math (Simplified Approximation) ---
-        // Just enough to show the "Find" feature works. For real precision, use a library.
+        // --- Astro Logic (Simplified) ---
         function updateAstroPositions() {
-            const date = new Date();
-            // Simplified Sun Position Logic (placeholder math for demo)
-            // Real calc would involve Julian Date, Ecliptic coord, etc.
+            const now = new Date();
+            // Mock Data that moves slowly based on time
+            const hour = now.getHours() + now.getMinutes()/60;
             
-            // Mocking movement based on time of day
-            const hour = date.getHours() + date.getMinutes()/60;
-            // Sun rises East (90), sets West (270). High at noon.
-            // Simple mapping for demo:
-            let sunAz = 180; 
-            let sunAlt = -90;
-            
-            if(hour > 6 && hour < 18) {
-                sunAlt = 90 - Math.abs(12 - hour) * 15; // Rough peak at noon
-                sunAz = 90 + (hour - 6) * 15; 
+            // Simple Sun Path: East(90) to West(270)
+            let sunAz = 180; let sunAlt = -45;
+            if (hour >= 6 && hour <= 18) {
+                sunAz = 90 + ((hour - 6) / 12) * 180;
+                sunAlt = 90 - Math.abs(12 - hour) * 15;
             }
-            
             state.sunPos = { az: sunAz, alt: sunAlt };
-            
-            // Moon: Just offset from sun for demo purposes (or random fixed for stability)
-            state.moonPos = { az: (sunAz + 180) % 360, alt: 45 }; 
+            state.moonPos = { az: (sunAz + 180) % 360, alt: 45 };
 
-            elSun.innerText = `Sun: ${Math.round(state.sunPos.az)}° / ${Math.round(state.sunPos.alt)}°`;
-            elMoon.innerText = `Moon: ${Math.round(state.moonPos.az)}° / ${Math.round(state.moonPos.alt)}°`;
+            elSun.innerText = `SUN: ${Math.round(sunAz)}° / ${Math.round(sunAlt)}°`;
+            elMoon.innerText = `MOON: ${Math.round(state.moonPos.az)}° / ${Math.round(state.moonPos.alt)}°`;
         }
 
-        // --- Logic: Find Target ---
+        // --- Find Logic ---
         function toggleTarget(target) {
-            // Remove active classes
             document.getElementById('btn-sun').classList.remove('active');
             document.getElementById('btn-moon').classList.remove('active');
             
             if (state.tracking === target) {
-                state.tracking = null; // Turn off
-                hideArrows();
+                state.tracking = null;
+                updateArrows(0, 0, false);
             } else {
                 state.tracking = target;
                 document.getElementById('btn-' + target).classList.add('active');
             }
         }
 
-        function updateGuideArrows(targetAz, targetAlt) {
-            if (!state.tracking) return;
-
-            const currentAz = state.azimuth;
-            const currentAlt = state.altitude;
-
-            // Calculate smallest difference in Azimuth
-            let diffAz = targetAz - currentAz;
-            if (diffAz > 180) diffAz -= 360;
-            if (diffAz < -180) diffAz += 360;
-
-            let diffAlt = targetAlt - currentAlt;
-
-            // Threshold to show arrows
-            const threshold = 5; 
-
-            // Horizontal
-            if (diffAz > threshold) {
-                arrowRight.style.opacity = 1; arrowLeft.style.opacity = 0;
-            } else if (diffAz < -threshold) {
-                arrowRight.style.opacity = 0; arrowLeft.style.opacity = 1;
-            } else {
-                arrowRight.style.opacity = 0; arrowLeft.style.opacity = 0;
+        function updateArrows(tAz, tAlt, active) {
+            if (!active) {
+                Object.values(arrows).forEach(a => a.style.opacity = 0);
+                return;
             }
 
-            // Vertical
-            if (diffAlt > threshold) {
-                arrowUp.style.opacity = 1; arrowDown.style.opacity = 0;
-            } else if (diffAlt < -threshold) {
-                arrowUp.style.opacity = 0; arrowDown.style.opacity = 1;
-            } else {
-                arrowUp.style.opacity = 0; arrowDown.style.opacity = 0;
-            }
+            const cAz = state.azimuth;
+            const cAlt = state.altitude;
+
+            let dAz = tAz - cAz;
+            if (dAz > 180) dAz -= 360;
+            if (dAz < -180) dAz += 360;
             
-            // If "Locked on" (within threshold)
-            if (Math.abs(diffAz) < threshold && Math.abs(diffAlt) < threshold) {
-                // Change crosshair color logic could go here
-            }
+            let dAlt = tAlt - cAlt;
+
+            // Thresholds
+            const TH = 5; 
+            arrows.left.style.opacity = dAz < -TH ? 1 : 0;
+            arrows.right.style.opacity = dAz > TH ? 1 : 0;
+            arrows.up.style.opacity = dAlt > TH ? 1 : 0;
+            arrows.down.style.opacity = dAlt < -TH ? 1 : 0;
         }
 
-        function hideArrows() {
-            arrowUp.style.opacity = 0;
-            arrowDown.style.opacity = 0;
-            arrowLeft.style.opacity = 0;
-            arrowRight.style.opacity = 0;
-        }
-
-        // --- Rendering (The "Fix" for Centering) ---
+        // --- Rendering ---
         function renderLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
@@ -414,134 +406,141 @@
             const cx = w / 2;
             const cy = h / 2;
             
-            // Field of View (approx) - determines pixels per degree
-            const fov = 60; 
-            const pxPerDeg = h / fov; 
+            const fov = 60; // Field of View Vertical
+            const pxPerDeg = h / fov;
 
-            // 1. Draw Crosshair (STATIC in center)
-            ctx.strokeStyle = '#00ffcc';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            // Horizontal dash
-            ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy);
-            // Vertical dash
-            ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy + 20);
-            ctx.stroke();
-
-            // Circle around center
-            ctx.beginPath();
-            ctx.arc(cx, cy, 30, 0, Math.PI*2);
-            ctx.strokeStyle = 'rgba(0, 255, 204, 0.3)';
-            ctx.stroke();
-
-            // 2. Draw Horizon & Altitude Grid
-            // The grid moves OPPOSITE to device pitch.
-            // If device pitches UP (+), grid moves DOWN.
+            // 1. Draw Horizon & Altitude Grid
+            // Logic: if Pitch is 0 (Horizon), line 0 should be at cy.
+            // if Pitch is +10 (Looking Up), line 0 should be at cy + 10deg (Lower on screen).
             
-            // Current Device Altitude defines what degree is at center (cy)
-            const centerAlt = state.altitude; 
-            
-            // Draw Horizon (0 degrees altitude)
-            const horizonY = cy + (centerAlt - 0) * pxPerDeg; 
-            
-            ctx.strokeStyle = '#ff3333'; // Red for horizon
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(0, horizonY);
-            ctx.lineTo(w, horizonY);
-            ctx.stroke();
-            ctx.fillStyle = '#ff3333';
-            ctx.fillText("HORIZON", 10, horizonY - 5);
+            const currentPitch = state.altitude;
 
-            // Draw other altitude lines (e.g., every 10 degrees)
-            ctx.strokeStyle = 'rgba(0, 255, 204, 0.3)';
-            ctx.fillStyle = 'rgba(0, 255, 204, 0.7)';
+            // Loop lines every 10 degrees
             ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
             
-            // Only draw lines visible on screen to save perf
-            const minVisAlt = centerAlt - (fov/2) - 10;
-            const maxVisAlt = centerAlt + (fov/2) + 10;
-
-            for (let a = -90; a <= 90; a += 10) {
-                if (a === 0) continue; // Already drew horizon
-                if (a < minVisAlt || a > maxVisAlt) continue;
-
-                const y = cy + (centerAlt - a) * pxPerDeg;
+            for (let deg = -90; deg <= 90; deg += 10) {
+                // Calculate Y position relative to center
+                // diff = currentPitch - lineDegree.
+                // If I look up (pitch=10), line(0) is 10 deg below center.
+                const offsetDeg = currentPitch - deg;
                 
-                ctx.beginPath();
-                ctx.moveTo(cx - 50, y);
-                ctx.lineTo(cx + 50, y); // Small center line
-                ctx.stroke();
-                
-                ctx.fillText(a + "°", cx + 60, y + 4);
+                // Only draw if visible (within FOV/2 + margin)
+                if (Math.abs(offsetDeg) > (fov/2 + 10)) continue;
+
+                const y = cy + (offsetDeg * pxPerDeg);
+
+                // Style based on type
+                if (deg === 0) {
+                    // Horizon Line (Red)
+                    ctx.strokeStyle = '#ff3333';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, y); ctx.lineTo(w, y);
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = '#ff3333';
+                    ctx.fillText("HORIZON", 40, y - 10);
+                } else {
+                    // Grid Lines (Cyan transparent)
+                    ctx.strokeStyle = 'rgba(0, 255, 204, 0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    // Draw with gap in middle for HUD aesthetics
+                    ctx.moveTo(cx - 100, y); ctx.lineTo(cx - 20, y);
+                    ctx.moveTo(cx + 20, y); ctx.lineTo(cx + 100, y);
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = 'rgba(0, 255, 204, 0.6)';
+                    ctx.font = '12px Courier New';
+                    ctx.fillText(deg + "°", cx + 120, y);
+                }
             }
 
-            // 3. Draw Azimuth (Compass) Strip
-            // Drawn at top or bottom, sliding based on state.azimuth
-            const stripY = h * 0.2;
-            const pxPerDegAz = w / 90; // Show 90 degrees of compass at once
-            const centerAz = state.azimuth;
+            // 2. Draw Compass Strip (Azimuth)
+            // Logic: Strip moves left/right.
+            // If Az is 0 (North), N is at cx.
+            // If Az is 10 (Turn Right), N moves Left (cx - 10deg).
             
-            ctx.font = "14px Courier New";
+            const stripY = h * 0.15;
+            const pxPerDegAz = w / 80; // Scale for compass width
+            
+            // Draw Center Indicator Triangle
+            ctx.fillStyle = '#ffcc00';
+            ctx.beginPath();
+            ctx.moveTo(cx, stripY + 15);
+            ctx.lineTo(cx - 5, stripY + 5);
+            ctx.lineTo(cx + 5, stripY + 5);
+            ctx.fill();
+
+            // Draw Ticks
+            const currentAz = state.azimuth;
             for (let i = 0; i < 360; i += 15) {
-                let diff = i - centerAz;
-                // Wrap around logic
+                let diff = i - currentAz;
                 if (diff < -180) diff += 360;
                 if (diff > 180) diff -= 360;
                 
-                if (Math.abs(diff) > 50) continue; // Optimization
+                // Only draw visible
+                if (Math.abs(diff) * pxPerDegAz > w/2) continue;
 
                 const x = cx + diff * pxPerDegAz;
                 
-                // Draw tick
+                ctx.strokeStyle = '#00ffcc';
+                ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.moveTo(x, stripY);
-                ctx.lineTo(x, stripY - 10);
+                ctx.moveTo(x, stripY); ctx.lineTo(x, stripY - 10);
                 ctx.stroke();
                 
-                // Draw label
                 let label = i + "°";
-                if (i === 0) label = "N";
-                if (i === 90) label = "E";
-                if (i === 180) label = "S";
-                if (i === 270) label = "W";
+                if (i===0) label="N"; if(i===90) label="E"; if(i===180) label="S"; if(i===270) label="W";
                 
-                ctx.fillText(label, x, stripY - 15);
+                ctx.fillStyle = '#00ffcc';
+                ctx.fillText(label, x, stripY - 20);
             }
 
-            // 4. Draw Targets (Sun/Moon)
+            // 3. Draw Targets (AR Objects)
             if (state.tracking) {
                 const target = state.tracking === 'sun' ? state.sunPos : state.moonPos;
-                updateGuideArrows(target.az, target.alt);
+                updateArrows(target.az, target.alt, true);
                 
-                // Calculate position on screen
-                let azDiff = target.az - state.azimuth;
-                if (azDiff > 180) azDiff -= 360;
-                if (azDiff < -180) azDiff += 360;
+                // Convert Target Polar Coords to Screen X,Y
+                // Azimuth diff -> X
+                let dAz = target.az - currentAz;
+                if (dAz > 180) dAz -= 360;
+                if (dAz < -180) dAz += 360;
                 
-                const tX = cx + azDiff * pxPerDeg; // Use same scale for horizontal approx
-                const tY = cy + (state.altitude - target.alt) * pxPerDeg;
+                // Altitude diff -> Y
+                let dAlt = currentPitch - target.alt; // Positive if target is above center (wait... y is down)
+                // If target Alt is 45, current is 0. diff is -45. 
+                // Y = cy + (-45 * px). Upwards. Correct.
 
-                // Only draw if roughly within view
+                const tX = cx + dAz * pxPerDeg; 
+                const tY = cy + dAlt * pxPerDeg;
+
+                // Draw if roughly on screen
                 if (tX > -100 && tX < w + 100 && tY > -100 && tY < h + 100) {
+                    const color = state.tracking === 'sun' ? '#ffff00' : '#ffffff';
+                    
                     ctx.save();
                     ctx.translate(tX, tY);
                     
-                    // Target Circle
+                    // Box corners
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    const s = 30; // size
                     ctx.beginPath();
-                    ctx.arc(0, 0, 40, 0, Math.PI*2);
-                    ctx.strokeStyle = state.tracking === 'sun' ? '#ffff00' : '#ffffff';
-                    ctx.lineWidth = 3;
-                    ctx.stroke();
-                    
-                    // Cross inside target
-                    ctx.beginPath();
-                    ctx.moveTo(-50, 0); ctx.lineTo(50, 0);
-                    ctx.moveTo(0, -50); ctx.lineTo(0, 50);
+                    ctx.moveTo(-s, -s/2); ctx.lineTo(-s, -s); ctx.lineTo(-s/2, -s);
+                    ctx.moveTo(s, -s/2); ctx.lineTo(s, -s); ctx.lineTo(s/2, -s);
+                    ctx.moveTo(-s, s/2); ctx.lineTo(-s, s); ctx.lineTo(-s/2, s);
+                    ctx.moveTo(s, s/2); ctx.lineTo(s, s); ctx.lineTo(s/2, s);
                     ctx.stroke();
 
-                    ctx.fillStyle = state.tracking === 'sun' ? '#ffff00' : '#ffffff';
-                    ctx.fillText(state.tracking === 'sun' ? "SUN" : "MOON", 0, -50);
+                    // Label
+                    ctx.fillStyle = color;
+                    ctx.font = "bold 14px Courier New";
+                    ctx.fillText(state.tracking.toUpperCase(), 0, -s - 10);
+                    ctx.font = "10px Courier New";
+                    ctx.fillText(`${target.az.toFixed(0)}° / ${target.alt.toFixed(0)}°`, 0, s + 15);
                     
                     ctx.restore();
                 }
@@ -550,33 +549,32 @@
             requestAnimationFrame(renderLoop);
         }
 
-        // --- Screenshot Logic ---
-        function takePhoto() {
-            // Flash effect is handled by voice logic too, but here for button click
-            const flash = document.createElement('div');
-            flash.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:999;opacity:1;transition:opacity 0.5s";
-            document.body.appendChild(flash);
-            setTimeout(() => flash.style.opacity = 0, 50);
-            setTimeout(() => flash.remove(), 550);
-
-            // Create a temporary canvas to combine video + AR
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = video.videoWidth || canvas.width;
-            tempCanvas.height = video.videoHeight || canvas.height;
-            const tCtx = tempCanvas.getContext('2d');
-            
-            // Draw Video
-            tCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-            // Draw AR Overlay (Scaled)
-            tCtx.drawImage(canvas, 0, 0, tempCanvas.width, tempCanvas.height);
-            
-            // Download
-            const link = document.createElement('a');
-            link.download = `AstroCam-${Date.now()}.png`;
-            link.href = tempCanvas.toDataURL('image/png');
-            link.click();
+        // --- Photo ---
+        function flashScreen() {
+            const f = document.createElement('div');
+            f.style.cssText = "position:fixed;top:0;left:0;w:100%;h:100%;background:white;z-index:999;transition:opacity 0.5s";
+            document.body.appendChild(f);
+            setTimeout(()=>f.style.opacity=0,50);
+            setTimeout(()=>f.remove(),550);
         }
 
+        function takePhoto() {
+            flashScreen();
+            const temp = document.createElement('canvas');
+            temp.width = video.videoWidth || canvas.width;
+            temp.height = video.videoHeight || canvas.height;
+            const tCtx = temp.getContext('2d');
+            
+            // Draw Video
+            tCtx.drawImage(video, 0, 0, temp.width, temp.height);
+            // Draw UI (Fit to video size)
+            tCtx.drawImage(canvas, 0, 0, temp.width, temp.height);
+            
+            const link = document.createElement('a');
+            link.download = 'astrocam.png';
+            link.href = temp.toDataURL('image/png');
+            link.click();
+        }
     </script>
 </body>
 </html>
