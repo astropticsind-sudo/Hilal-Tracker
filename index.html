@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instrumen Falak Pro - Advanced HUD</title>
+    <title>Instrumen Falak Pro - Stellarium Sync</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -42,45 +42,48 @@
             background: rgba(0,0,0,0.85);
         }
 
-        .capture-flash {
-            animation: flash-anim 0.2s ease-out forwards;
-        }
-
-        @keyframes flash-anim {
-            0% { background: white; opacity: 1; }
-            100% { background: transparent; opacity: 0; }
+        /* Opacity untuk panel informasi */
+        .info-panel {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
 <body class="bg-black">
 
     <div id="app" class="relative w-full h-screen overflow-hidden">
-        <!-- Area Visualisasi (Luas) -->
+        <!-- Area Visualisasi -->
         <div class="absolute inset-0 z-0">
-            <video id="video" autoplay playsinline class="w-full h-full object-cover opacity-60"></video>
+            <video id="video" autoplay playsinline class="w-full h-full object-cover opacity-50"></video>
             <canvas id="overlay-canvas" class="absolute inset-0 z-20 pointer-events-none"></canvas>
-            <div id="flash-overlay" class="absolute inset-0 z-[100] pointer-events-none"></div>
             <div class="absolute inset-0 scanline z-10"></div>
         </div>
 
         <!-- Panah Guide (Pointer) -->
         <div id="guide-container" class="absolute inset-0 z-40 pointer-events-none flex items-center justify-center">
             <div id="target-pointer" class="hidden flex flex-col items-center">
-                <div class="guide-arrow text-yellow-500">
-                    <i data-lucide="navigation" size="48" style="transform: rotate(0deg)"></i>
+                <div class="guide-arrow text-yellow-400 drop-shadow-[0_0_10px_rgba(234,179,8,0.8)]">
+                    <i data-lucide="navigation" size="56"></i>
                 </div>
-                <p class="text-[10px] font-bold mt-2 bg-black/50 px-2 py-1 rounded">ARAHKAN KE TARGET</p>
+                <p class="text-[10px] font-bold mt-4 bg-black/70 px-3 py-1 rounded-full text-yellow-400">ARAHKAN KE TARGET</p>
             </div>
         </div>
 
-        <!-- HUD Skala Terintegrasi -->
+        <!-- HUD Skala Azimut & Altitude -->
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-            <div class="relative w-[85vh] h-[85vh] border border-white/5 rounded-full flex items-center justify-center">
-                <div class="absolute w-full h-px bg-white/10"></div>
-                <div class="absolute h-full w-px bg-white/10"></div>
-                <!-- Skala Altitude & Azimuth akan dirender via JS -->
-                <div id="hud-alt-scale" class="absolute h-full flex flex-col justify-between py-10 transition-transform"></div>
-                <div id="hud-az-scale" class="absolute w-full flex justify-between px-10 transition-transform"></div>
+            <!-- Lingkaran Crosshair Central -->
+            <div class="relative w-64 h-64 border border-white/20 rounded-full flex items-center justify-center">
+                <div class="absolute w-8 h-px bg-yellow-500"></div>
+                <div class="absolute h-8 w-px bg-yellow-500"></div>
+                
+                <!-- Skala Altitude (Vertikal) -->
+                <div id="hud-alt-scale" class="absolute h-[120vh] flex flex-col justify-between py-10 transition-transform duration-75"></div>
+            </div>
+            
+            <!-- Skala Azimut (Horizontal - Atas) -->
+            <div class="absolute top-1/4 w-[200vw] h-12 flex items-center justify-center overflow-hidden">
+                <div id="hud-az-scale" class="flex gap-20 items-center transition-transform duration-75"></div>
             </div>
         </div>
 
@@ -93,126 +96,121 @@
             </div>
         </div>
 
-        <!-- Data Astronomi (Samping) -->
-        <div class="absolute left-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-40 pointer-events-none w-48">
+        <!-- Data Astronomi (Panel Opacity) -->
+        <div class="absolute left-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-40 pointer-events-none w-52">
             <!-- Matahari -->
-            <div class="bg-black/50 backdrop-blur-md p-3 rounded-xl border-l-4 border-orange-500">
+            <div class="info-panel p-3 rounded-2xl border-l-4 border-orange-500/50">
                 <div class="flex items-center gap-2 mb-1">
-                    <i data-lucide="sun" size="12" class="text-orange-400"></i>
-                    <p class="text-[9px] text-orange-400 font-bold uppercase">Matahari</p>
+                    <i data-lucide="sun" size="14" class="text-orange-400"></i>
+                    <p class="text-[10px] text-orange-400 font-bold uppercase tracking-wider">Matahari</p>
                 </div>
-                <p class="text-[11px] text-white">AZ: <span id="sun-az" class="font-bold">---</span></p>
-                <p class="text-[11px] text-white">AL: <span id="sun-al" class="font-bold">---</span></p>
-                <p class="text-[9px] text-gray-400 mt-1 uppercase">Terbenam: <span id="sunset-time" class="text-white">--:--</span></p>
+                <div class="grid grid-cols-2 gap-1 text-[11px]">
+                    <span class="text-gray-400">Azimut:</span><span id="sun-az" class="text-white font-bold text-right">---</span>
+                    <span class="text-gray-400">Altitiude:</span><span id="sun-al" class="text-white font-bold text-right">---</span>
+                </div>
+                <p class="text-[9px] text-gray-400 mt-2 border-t border-white/5 pt-1 uppercase">Terbenam: <span id="sunset-time" class="text-white">--:--</span></p>
             </div>
 
             <!-- Bulan -->
-            <div class="bg-black/50 backdrop-blur-md p-3 rounded-xl border-l-4 border-yellow-500">
+            <div class="info-panel p-3 rounded-2xl border-l-4 border-yellow-500/50">
                 <div class="flex items-center gap-2 mb-1">
-                    <i data-lucide="moon" size="12" class="text-yellow-400"></i>
-                    <p class="text-[9px] text-yellow-400 font-bold uppercase">Bulan / Hilal</p>
+                    <i data-lucide="moon" size="14" class="text-yellow-400"></i>
+                    <p class="text-[10px] text-yellow-400 font-bold uppercase tracking-wider">Bulan / Hilal</p>
                 </div>
-                <p class="text-[11px] text-white">AZ: <span id="moon-az" class="font-bold">---</span></p>
-                <p class="text-[11px] text-white">AL: <span id="moon-al" class="font-bold">---</span></p>
-                <p class="text-[9px] text-gray-400 mt-1 uppercase">Elongasi: <span id="elongation-val" class="text-white font-bold">---</span></p>
+                <div class="grid grid-cols-2 gap-1 text-[11px]">
+                    <span class="text-gray-400">Azimut:</span><span id="moon-az" class="text-white font-bold text-right">---</span>
+                    <span class="text-gray-400">Altitude:</span><span id="moon-al" class="text-white font-bold text-right">---</span>
+                </div>
+                <div class="mt-2 border-t border-white/5 pt-1">
+                    <p class="text-[9px] text-gray-400 uppercase">Elongasi: <span id="elongation-val" class="text-white font-bold">---</span></p>
+                </div>
             </div>
 
             <!-- Lokasi -->
-            <div class="bg-black/50 backdrop-blur-md p-3 rounded-xl border-l-4 border-blue-500 pointer-events-auto">
+            <div class="info-panel p-3 rounded-2xl border-l-4 border-blue-500/50 pointer-events-auto">
                 <div class="flex justify-between items-center mb-1">
-                    <p class="text-[9px] text-blue-400 font-bold uppercase">Lokasi</p>
+                    <p class="text-[10px] text-blue-400 font-bold uppercase">Lokasi</p>
                     <button onclick="openGPSModal()" class="p-1 hover:bg-white/10 rounded"><i data-lucide="settings-2" size="12"></i></button>
                 </div>
-                <p class="text-[10px] text-white truncate" id="coords-val">0.00, 0.00</p>
+                <p class="text-[10px] text-white truncate font-bold" id="coords-val">0.00, 0.00</p>
                 <div class="flex items-center gap-2 mt-1">
                     <div id="gps-indicator" class="w-1.5 h-1.5 rounded-full bg-red-500"></div>
-                    <p id="gps-mode-tag" class="text-[8px] text-gray-400 uppercase">Auto GPS</p>
+                    <p id="gps-mode-tag" class="text-[8px] text-gray-500 uppercase">Auto GPS</p>
                 </div>
             </div>
         </div>
 
-        <!-- Kontrol Simulasi & Target -->
+        <!-- Kontrol Bawah -->
         <div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-2xl z-50 flex items-end gap-4 pointer-events-auto">
-            <!-- Timeline -->
-            <div class="flex-1 bg-black/70 backdrop-blur-2xl p-5 rounded-3xl border border-white/10 shadow-2xl">
+            <!-- Timeline Simulator -->
+            <div class="flex-1 bg-black/60 backdrop-blur-xl p-5 rounded-3xl border border-white/10 shadow-2xl">
                 <div class="flex flex-col gap-4">
                     <div class="flex items-center gap-4">
-                        <span class="text-[10px] font-bold text-gray-500 w-12">WAKTU</span>
-                        <input id="time-slider" type="range" min="-720" max="720" value="0" class="flex-1 h-1.5 bg-white/10 rounded-full appearance-none">
+                        <span class="text-[10px] font-bold text-gray-400 w-12">SIMULASI</span>
+                        <input id="time-slider" type="range" min="-720" max="720" value="0" class="flex-1 h-1 bg-white/20 rounded-full appearance-none">
                         <button onclick="resetTime()" class="p-2 hover:bg-white/10 rounded-lg text-white transition-colors"><i data-lucide="rotate-ccw" size="16"></i></button>
                     </div>
                     <div class="flex justify-between items-center text-[11px] font-bold text-white uppercase tracking-widest">
-                        <button onclick="adjustDay(-1)" class="p-2 hover:bg-white/10 rounded-lg"><i data-lucide="chevron-left" size="18"></i></button>
+                        <button onclick="adjustDay(-1)" class="p-2 hover:bg-white/10 rounded-lg"><i data-lucide="chevron-left" size="20"></i></button>
                         <div class="text-center">
-                            <span id="sim-date" class="text-yellow-500 block">-- --- ----</span>
-                            <span id="mode-label" class="text-[8px] text-gray-500">REAL-TIME MODE</span>
+                            <span id="sim-date" class="text-yellow-500 block text-xs">-- --- ----</span>
+                            <span id="mode-label" class="text-[8px] text-gray-500">REAL-TIME</span>
                         </div>
-                        <button onclick="adjustDay(1)" class="p-2 hover:bg-white/10 rounded-lg"><i data-lucide="chevron-right" size="18"></i></button>
+                        <button onclick="adjustDay(1)" class="p-2 hover:bg-white/10 rounded-lg"><i data-lucide="chevron-right" size="20"></i></button>
                     </div>
                 </div>
             </div>
 
-            <!-- Tombol Cepat Target -->
+            <!-- Tombol Target -->
             <div class="flex flex-col gap-2">
-                <button onclick="setTarget('moon')" id="btn-moon" class="p-5 rounded-2xl bg-white/5 border border-white/10 text-white transition-all hover:scale-105 active:scale-95 shadow-xl">
+                <button onclick="setTarget('moon')" id="btn-moon" class="p-5 rounded-2xl bg-white/5 border border-white/10 text-white transition-all shadow-xl">
                     <i data-lucide="moon" size="24"></i>
                 </button>
-                <button onclick="setTarget('sun')" id="btn-sun" class="p-5 rounded-2xl bg-white/5 border border-white/10 text-white transition-all hover:scale-105 active:scale-95 shadow-xl">
+                <button onclick="setTarget('sun')" id="btn-sun" class="p-5 rounded-2xl bg-white/5 border border-white/10 text-white transition-all shadow-xl">
                     <i data-lucide="sun" size="24"></i>
                 </button>
             </div>
         </div>
 
-        <!-- MODAL GPS -->
+        <!-- Modals -->
         <div id="gps-modal" class="absolute inset-0 z-[300] modal-blur hidden flex items-center justify-center p-6">
-            <div class="bg-slate-900 border border-white/20 p-8 rounded-[2rem] w-full max-w-sm shadow-2xl">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-white font-black text-sm uppercase tracking-tighter">Konfigurasi Lokasi</h3>
-                    <button onclick="closeGPSModal()" class="text-gray-400"><i data-lucide="x" size="20"></i></button>
-                </div>
+            <div class="bg-slate-900 border border-white/20 p-8 rounded-[2rem] w-full max-w-sm">
+                <h3 class="text-white font-black text-sm uppercase mb-6 tracking-tighter text-center">Set Lokasi Pengamat</h3>
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-3">
                         <button id="btn-auto-gps" onclick="setGPSMode(false)" class="py-3 rounded-xl border border-blue-500 bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase">Otomatis</button>
                         <button id="btn-manual-gps" onclick="setGPSMode(true)" class="py-3 rounded-xl border border-white/10 bg-white/5 text-gray-400 text-[10px] font-bold uppercase">Manual</button>
                     </div>
-                    <div id="manual-inputs" class="space-y-3 opacity-50 pointer-events-none transition-opacity">
-                        <div>
-                            <label class="text-[9px] text-gray-500 block mb-1">LATITUDE (LS/LU)</label>
-                            <input id="input-lat" type="number" step="any" value="-6.1751" class="w-full bg-black border border-white/10 rounded-xl p-4 text-white text-xs outline-none focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="text-[9px] text-gray-500 block mb-1">LONGITUDE (BT)</label>
-                            <input id="input-lon" type="number" step="any" value="106.8650" class="w-full bg-black border border-white/10 rounded-xl p-4 text-white text-xs outline-none focus:border-blue-500">
-                        </div>
+                    <div id="manual-inputs" class="space-y-3 opacity-50 pointer-events-none">
+                        <input id="input-lat" type="number" step="any" placeholder="Latitude" class="w-full bg-black border border-white/10 rounded-xl p-4 text-white text-xs">
+                        <input id="input-lon" type="number" step="any" placeholder="Longitude" class="w-full bg-black border border-white/10 rounded-xl p-4 text-white text-xs">
                     </div>
-                    <button onclick="applyManualGPS()" class="w-full py-4 bg-blue-600 text-white text-[10px] font-bold rounded-xl uppercase tracking-widest mt-4">Simpan Perubahan</button>
+                    <button onclick="applyManualGPS()" class="w-full py-4 bg-blue-600 text-white text-[10px] font-bold rounded-xl uppercase tracking-widest">Terapkan</button>
+                    <button onclick="closeGPSModal()" class="w-full text-gray-500 text-[10px] uppercase font-bold py-2">Batal</button>
                 </div>
             </div>
         </div>
 
-        <!-- MODAL JAM MANUAL -->
         <div id="time-modal" class="absolute inset-0 z-[300] modal-blur hidden flex items-center justify-center p-6">
-            <div class="bg-slate-900 border border-white/20 p-8 rounded-[2rem] w-full max-w-sm">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-white font-black text-sm uppercase tracking-tighter">Set Jam Manual</h3>
-                    <button onclick="closeTimeModal()" class="text-gray-400"><i data-lucide="x" size="20"></i></button>
+            <div class="bg-slate-900 border border-white/20 p-8 rounded-[2rem] w-full max-w-sm text-center">
+                <h3 class="text-white font-black text-sm uppercase mb-6">Waktu Manual</h3>
+                <div class="flex gap-2 mb-6 justify-center">
+                    <input id="manual-hh" type="number" placeholder="00" class="w-16 bg-black border border-white/10 rounded-xl p-4 text-white text-center text-xl font-bold">
+                    <span class="text-white text-2xl self-center">:</span>
+                    <input id="manual-mm" type="number" placeholder="00" class="w-16 bg-black border border-white/10 rounded-xl p-4 text-white text-center text-xl font-bold">
                 </div>
-                <div class="flex gap-2 mb-6">
-                    <input id="manual-hh" type="number" min="0" max="23" placeholder="HH" class="w-1/3 bg-black border border-white/10 rounded-xl p-4 text-white text-center text-xl font-bold">
-                    <input id="manual-mm" type="number" min="0" max="59" placeholder="MM" class="w-1/3 bg-black border border-white/10 rounded-xl p-4 text-white text-center text-xl font-bold">
-                    <input id="manual-ss" type="number" min="0" max="59" placeholder="SS" class="w-1/3 bg-black border border-white/10 rounded-xl p-4 text-white text-center text-xl font-bold">
-                </div>
-                <button onclick="applyManualTime()" class="w-full py-4 bg-yellow-500 text-black text-[10px] font-bold rounded-xl uppercase tracking-widest">Update Waktu</button>
+                <button onclick="applyManualTime()" class="w-full py-4 bg-yellow-500 text-black text-[10px] font-bold rounded-xl uppercase tracking-widest">Update</button>
+                <button onclick="closeTimeModal()" class="mt-4 text-gray-500 text-[10px] uppercase font-bold">Tutup</button>
             </div>
         </div>
 
-        <!-- Overlay Awal -->
+        <!-- Start Overlay -->
         <div id="overlay" class="absolute inset-0 z-[500] bg-black flex items-center justify-center p-12 text-center">
             <div class="max-w-xs">
-                <i data-lucide="telescope" class="mx-auto mb-6 text-yellow-500" size="48"></i>
-                <h2 class="text-xl font-black text-white mb-2 uppercase tracking-tighter">Instrumen Falak Pro</h2>
-                <p class="text-[10px] text-gray-500 leading-relaxed mb-10 uppercase tracking-widest">Inisialisasi Sensor Astronomi & HUD Imersif...</p>
-                <button onclick="initApp()" class="w-full py-4 bg-yellow-500 text-black font-black text-xs rounded-2xl shadow-xl active:scale-95 transition-transform tracking-widest">
+                <i data-lucide="telescope" class="mx-auto mb-6 text-yellow-500" size="64"></i>
+                <h2 class="text-2xl font-black text-white mb-2 uppercase tracking-tighter">Instrumen Falak Pro</h2>
+                <p class="text-[10px] text-gray-500 leading-relaxed mb-10 uppercase tracking-widest">Sinkronisasi Posisi Astronomi & Sensor Navigasi...</p>
+                <button onclick="initApp()" class="w-full py-5 bg-yellow-500 text-black font-black text-xs rounded-2xl shadow-2xl active:scale-95 transition-transform tracking-widest">
                     MULAI INSTRUMEN
                 </button>
             </div>
@@ -220,31 +218,44 @@
     </div>
 
     <script>
-        let orientation = { alpha: 0, beta: 0 };
-        let calOffset = { alpha: 0, beta: 0 };
+        let sensorOrientation = { alpha: 0, beta: 0 };
         let simulatedTime = new Date();
         let isAutoTime = true;
         let isManualGPS = false;
         let activeTarget = null;
-        let locationData = { lat: -6.1751, lon: 106.8650 }; // Default Jakarta
+        let locationData = { lat: -6.1751, lon: 106.8650 }; // Default: Jakarta
 
         const canvas = document.getElementById('overlay-canvas');
         const ctx = canvas.getContext('2d');
         lucide.createIcons();
 
-        // UTILS
         const deg2rad = d => d * Math.PI / 180;
         const rad2deg = r => r * 180 / Math.PI;
 
+        // Generate HUD Scales
         function generateScales() {
             const altS = document.getElementById('hud-alt-scale');
             const azS = document.getElementById('hud-az-scale');
             altS.innerHTML = ''; azS.innerHTML = '';
+            
+            // Altitude Scale
             for (let i = 90; i >= -90; i -= 10) {
-                altS.innerHTML += `<div class="flex items-center gap-2"><div class="w-4 h-px bg-white/20"></div><span class="text-[8px] text-white/40">${i}°</span></div>`;
+                altS.innerHTML += `
+                    <div class="flex items-center gap-4">
+                        <div class="w-6 h-px bg-white/40"></div>
+                        <span class="text-[10px] font-bold text-white/60">${i}°</span>
+                    </div>`;
             }
-            for (let i = -180; i <= 180; i += 20) {
-                azS.innerHTML += `<div class="flex flex-col items-center gap-1"><span class="text-[8px] text-white/40">${i}°</span><div class="h-4 w-px bg-white/20"></div></div>`;
+
+            // Azimuth Scale (360 degrees)
+            for (let i = 0; i < 360; i += 10) {
+                let label = i === 0 ? 'U' : i === 90 ? 'T' : i === 180 ? 'S' : i === 270 ? 'B' : i + '°';
+                let color = (i % 90 === 0) ? 'text-yellow-500' : 'text-white/40';
+                azS.innerHTML += `
+                    <div class="flex flex-col items-center gap-2 min-w-[80px]">
+                        <span class="text-[11px] font-bold ${color}">${label}</span>
+                        <div class="h-4 w-px bg-white/20"></div>
+                    </div>`;
             }
         }
 
@@ -254,7 +265,6 @@
             generateScales();
             startCamera();
             initGPS();
-            initVoice();
             
             if (window.DeviceOrientationEvent) {
                 if (typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -266,11 +276,10 @@
             }
             window.addEventListener('resize', resizeCanvas);
 
-            // Listen slider
             document.getElementById('time-slider').oninput = (e) => {
                 isAutoTime = false;
-                const now = new Date();
-                simulatedTime = new Date(now.getTime() + e.target.value * 60000);
+                const base = new Date();
+                simulatedTime = new Date(base.getTime() + e.target.value * 60000);
                 updateTimeDisplay();
             };
         }
@@ -283,88 +292,114 @@
         function startCamera() {
             navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
                 .then(s => document.getElementById('video').srcObject = s)
-                .catch(e => console.warn("Camera fallback applied"));
+                .catch(e => console.warn("Camera blocked"));
         }
 
         function initGPS() {
             if ("geolocation" in navigator) {
-                navigator.geolocation.watchPosition(
-                    pos => {
-                        if (!isManualGPS) {
-                            locationData.lat = pos.coords.latitude;
-                            locationData.lon = pos.coords.longitude;
-                            updateLocationUI();
-                        }
-                    },
-                    null,
-                    { enableHighAccuracy: true }
-                );
+                navigator.geolocation.getCurrentPosition(pos => {
+                    if (!isManualGPS) {
+                        locationData.lat = pos.coords.latitude;
+                        locationData.lon = pos.coords.longitude;
+                        updateLocationUI();
+                    }
+                }, null, {enableHighAccuracy: true});
             }
         }
 
-        // ASTRONOMY LOGIC (Improved)
-        function getAstronomy(date, lat, lon) {
-            // Simplified calculation based on Julian Day
+        // PRECISE ASTRONOMY CALCULATIONS (Stellarium Logic)
+        function calculateSolarPosition(date, lat, lon) {
             const jd = (date.getTime() / 86400000) - (date.getTimezoneOffset() / 1440) + 2440587.5;
-            const d = jd - 2451545.0;
-            
-            // Solar Position
-            const g = (357.529 + 0.98560028 * d) % 360;
-            const q = (280.459 + 0.98564736 * d) % 360;
-            const L = (q + 1.915 * Math.sin(deg2rad(g)) + 0.020 * Math.sin(deg2rad(2*g))) % 360;
-            const e = 23.439 - 0.00000036 * d;
-            
-            const raSun = rad2deg(Math.atan2(Math.cos(deg2rad(e)) * Math.sin(deg2rad(L)), Math.cos(deg2rad(L))));
-            const decSun = rad2deg(Math.asin(Math.sin(deg2rad(e)) * Math.sin(deg2rad(L))));
+            const n = jd - 2451545.0;
+
+            const L = (280.460 + 0.9856474 * n) % 360;
+            const g = (357.528 + 0.9856003 * n) % 360;
+            const lambda = L + 1.915 * Math.sin(deg2rad(g)) + 0.020 * Math.sin(deg2rad(2 * g));
+            const epsilon = 23.439 - 0.0000004 * n;
+
+            const ra = rad2deg(Math.atan2(Math.cos(deg2rad(epsilon)) * Math.sin(deg2rad(lambda)), Math.cos(deg2rad(lambda))));
+            const dec = rad2deg(Math.asin(Math.sin(deg2rad(epsilon)) * Math.sin(deg2rad(lambda))));
 
             // Local Sidereal Time
-            const UT = date.getUTCHours() + date.getUTCMinutes()/60 + date.getUTCSeconds()/3600;
-            const lst = (100.46 + 0.985647 * d + lon + 15 * UT) % 360;
+            const UT = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+            const GMST = (18.697374558 + 24.06570982441908 * n) % 24;
+            const lst = (GMST * 15 + lon) % 360;
 
-            const hourAngleSun = (lst - raSun + 360) % 360;
-            const altSun = rad2deg(Math.asin(Math.sin(deg2rad(lat)) * Math.sin(deg2rad(decSun)) + Math.cos(deg2rad(lat)) * Math.cos(deg2rad(decSun)) * Math.cos(deg2rad(hourAngleSun))));
-            const azSun = rad2deg(Math.atan2(-Math.sin(deg2rad(hourAngleSun)), Math.cos(deg2rad(lat)) * Math.tan(deg2rad(decSun)) - Math.sin(deg2rad(lat)) * Math.cos(deg2rad(hourAngleSun)))) + 180;
+            const ha = (lst - ra + 360) % 360;
 
-            // Simplified Moon (relative to Sun for Hilal context)
-            const moonAge = ((d + 4.5) % 29.53);
-            const moonPhase = moonAge / 29.53;
-            const elongation = moonPhase * 360; // Approximated
+            const alt = rad2deg(Math.asin(Math.sin(deg2rad(lat)) * Math.sin(deg2rad(dec)) + Math.cos(deg2rad(lat)) * Math.cos(deg2rad(dec)) * Math.cos(deg2rad(ha))));
+            const az = rad2deg(Math.atan2(Math.sin(deg2rad(ha)), Math.cos(deg2rad(ha)) * Math.sin(deg2rad(lat)) - Math.tan(deg2rad(dec)) * Math.cos(deg2rad(lat))));
+
+            return { az: (az + 180) % 360, al: alt };
+        }
+
+        function calculateMoonPosition(date, lat, lon) {
+            // Low precision Moon position
+            const jd = (date.getTime() / 86400000) - (date.getTimezoneOffset() / 1440) + 2440587.5;
+            const T = (jd - 2451545.0) / 36525;
+
+            const L = (218.316 + 481267.881 * T) % 360;
+            const M = (134.963 + 477198.867 * T) % 360;
+            const F = (93.272 + 483202.018 * T) % 360;
+
+            const lambda = L + 6.289 * Math.sin(deg2rad(M));
+            const beta = 5.128 * Math.sin(deg2rad(F));
+            const epsilon = 23.439;
+
+            const ra = rad2deg(Math.atan2(Math.sin(deg2rad(lambda)) * Math.cos(deg2rad(epsilon)) - Math.tan(deg2rad(beta)) * Math.sin(deg2rad(epsilon)), Math.cos(deg2rad(lambda))));
+            const dec = rad2deg(Math.asin(Math.sin(deg2rad(beta)) * Math.cos(deg2rad(epsilon)) + Math.cos(deg2rad(beta)) * Math.sin(deg2rad(epsilon)) * Math.sin(deg2rad(lambda))));
+
+            const UT = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+            const GMST = (18.697374558 + 24.06570982441908 * (jd - 2451545.0)) % 24;
+            const lst = (GMST * 15 + lon) % 360;
+            const ha = (lst - ra + 360) % 360;
+
+            const alt = rad2deg(Math.asin(Math.sin(deg2rad(lat)) * Math.sin(deg2rad(dec)) + Math.cos(deg2rad(lat)) * Math.cos(deg2rad(dec)) * Math.cos(deg2rad(ha))));
+            const az = rad2deg(Math.atan2(Math.sin(deg2rad(ha)), Math.cos(deg2rad(ha)) * Math.sin(deg2rad(lat)) - Math.tan(deg2rad(dec)) * Math.cos(deg2rad(lat))));
+
+            return { az: (az + 180) % 360, al: alt };
+        }
+
+        function getAstronomy(date, lat, lon) {
+            const sun = calculateSolarPosition(date, lat, lon);
+            const moon = calculateMoonPosition(date, lat, lon);
             
-            const altMoon = altSun + (moonAge > 1 ? 5 : -5) * Math.cos(deg2rad(elongation)); // Fake path for demo
-            const azMoon = (azSun + elongation/10) % 360;
+            // Angular distance for elongation
+            const cosE = Math.sin(deg2rad(sun.al)) * Math.sin(deg2rad(moon.al)) + Math.cos(deg2rad(sun.al)) * Math.cos(deg2rad(moon.al)) * Math.cos(deg2rad(sun.az - moon.az));
+            const elongation = rad2deg(Math.acos(Math.max(-1, Math.min(1, cosE))));
 
-            // Sunset approx
-            const sunsetH = 18 + (lat/90); // Very rough approx for UI
-            
+            // Rough Sunset (Standard offset)
+            const sunsetH = 18 + (lat / 15); 
+
             return {
-                sun: { az: azSun, al: altSun },
-                moon: { az: azMoon, al: altMoon },
-                elongation: Math.abs(elongation % 360).toFixed(1) + "°",
-                sunset: Math.floor(sunsetH) + ":" + Math.floor((sunsetH % 1)*60).toString().padStart(2, '0')
+                sun, moon,
+                elongation: elongation.toFixed(2) + "°",
+                sunset: Math.floor(sunsetH) + ":" + Math.floor((sunsetH % 1) * 60).toString().padStart(2, '0')
             };
         }
 
         function handleOrientation(e) {
-            let az = e.alpha ? (360 - e.alpha) : 0;
-            let alt = e.beta ? (e.beta - 90) : 0;
-            orientation.alpha = (az + calOffset.alpha + 360) % 360;
-            orientation.beta = alt + calOffset.beta;
+            // Alpha: North = 0, West = 90, South = 180, East = 270 (Device coords)
+            // We map it to standard Compass (0 North, 90 East...)
+            sensorOrientation.alpha = (e.alpha !== null) ? (360 - e.alpha) % 360 : 0;
+            sensorOrientation.beta = (e.beta !== null) ? (e.beta - 90) : 0; // -90 when looking at horizon
             updateUI();
         }
 
         function updateUI() {
             const data = getAstronomy(simulatedTime, locationData.lat, locationData.lon);
 
-            document.getElementById('sun-az').innerText = data.sun.az.toFixed(1) + "°";
-            document.getElementById('sun-al').innerText = data.sun.al.toFixed(1) + "°";
-            document.getElementById('moon-az').innerText = data.moon.az.toFixed(1) + "°";
-            document.getElementById('moon-al').innerText = data.moon.al.toFixed(1) + "°";
+            document.getElementById('sun-az').innerText = data.sun.az.toFixed(2) + "°";
+            document.getElementById('sun-al').innerText = data.sun.al.toFixed(2) + "°";
+            document.getElementById('moon-az').innerText = data.moon.az.toFixed(2) + "°";
+            document.getElementById('moon-al').innerText = data.moon.al.toFixed(2) + "°";
             document.getElementById('elongation-val').innerText = data.elongation;
             document.getElementById('sunset-time').innerText = data.sunset;
 
-            // HUD Move
-            document.getElementById('hud-alt-scale').style.transform = `translateY(${orientation.beta * 6}px)`;
-            document.getElementById('hud-az-scale').style.transform = `translateX(${(orientation.alpha - 180) * 4}px)`;
+            // HUD Move (Sensitivity scaling)
+            const azOffset = (sensorOrientation.alpha * 8); // Scaled for the wide azimut strip
+            document.getElementById('hud-alt-scale').style.transform = `translateY(${sensorOrientation.beta * 8}px)`;
+            document.getElementById('hud-az-scale').style.transform = `translateX(${-azOffset}px)`;
 
             drawAR(data.sun, data.moon);
             updatePointer(data);
@@ -379,55 +414,58 @@
             pointer.classList.remove('hidden');
             const target = activeTarget === 'sun' ? data.sun : data.moon;
             
-            // Calculate angle to target in screen space
-            const diffAz = target.az - orientation.alpha;
-            const diffAl = target.al - orientation.beta;
-            const angle = Math.atan2(diffAl, diffAz);
+            // Difference between sensor heading and target
+            let diffAz = target.az - sensorOrientation.alpha;
+            if (diffAz > 180) diffAz -= 360;
+            if (diffAz < -180) diffAz += 360;
             
+            const diffAl = target.al - sensorOrientation.beta;
+            
+            // Screen Angle
+            const angle = Math.atan2(diffAl, diffAz);
             const arrowIcon = pointer.querySelector('.guide-arrow');
             arrowIcon.style.transform = `rotate(${-rad2deg(angle) + 90}deg)`;
 
-            // Hide if close
-            if (Math.abs(diffAz) < 5 && Math.abs(diffAl) < 5) {
-                pointer.style.opacity = "0.2";
-            } else {
-                pointer.style.opacity = "1";
-            }
+            // Opacity feedback
+            const dist = Math.sqrt(diffAz*diffAz + diffAl*diffAl);
+            pointer.style.opacity = Math.max(0.2, Math.min(1, dist/10));
         }
 
         function drawAR(sun, moon) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
-            const sf = 30; 
+            const pixelsPerDegree = 30; 
 
-            const toScreen = (pos) => ({
-                x: cx + (pos.az - orientation.alpha) * sf,
-                y: cy + (orientation.beta - pos.al) * sf
-            });
+            const getScreenPos = (pos) => {
+                let dAz = pos.az - sensorOrientation.alpha;
+                if (dAz > 180) dAz -= 360;
+                if (dAz < -180) dAz += 360;
+                return {
+                    x: cx + (dAz * pixelsPerDegree),
+                    y: cy + ((sensorOrientation.beta - pos.al) * pixelsPerDegree)
+                };
+            };
 
-            const sPos = toScreen(sun);
-            const mPos = toScreen(moon);
+            const sPos = getScreenPos(sun);
+            const mPos = getScreenPos(moon);
 
-            // Sun Icon
-            ctx.shadowBlur = 20; ctx.shadowColor = "orange";
-            ctx.fillStyle = "rgba(255, 165, 0, 0.8)";
-            ctx.beginPath(); ctx.arc(sPos.x, sPos.y, 30, 0, Math.PI*2); ctx.fill();
+            // Render Matahari
+            ctx.shadowBlur = 30; ctx.shadowColor = "rgba(255, 140, 0, 0.5)";
+            ctx.fillStyle = "rgba(255, 200, 50, 0.8)";
+            ctx.beginPath(); ctx.arc(sPos.x, sPos.y, 40, 0, Math.PI*2); ctx.fill();
             
-            // Moon Icon
-            ctx.shadowColor = "yellow";
-            ctx.fillStyle = "rgba(255, 255, 200, 0.9)";
-            ctx.beginPath(); ctx.arc(mPos.x, mPos.y, 20, 0, Math.PI*2); ctx.fill();
+            // Render Bulan
+            ctx.shadowBlur = 20; ctx.shadowColor = "rgba(255, 255, 255, 0.4)";
+            ctx.fillStyle = "rgba(220, 220, 255, 0.9)";
+            ctx.beginPath(); ctx.arc(mPos.x, mPos.y, 25, 0, Math.PI*2); ctx.fill();
             ctx.shadowBlur = 0;
         }
 
-        // MODAL & UI ACTIONS
         function setTarget(t) {
             activeTarget = (activeTarget === t) ? null : t;
-            document.getElementById('btn-moon').classList.toggle('bg-yellow-500', activeTarget === 'moon');
-            document.getElementById('btn-moon').classList.toggle('text-black', activeTarget === 'moon');
-            document.getElementById('btn-sun').classList.toggle('bg-orange-500', activeTarget === 'sun');
-            document.getElementById('btn-sun').classList.toggle('text-black', activeTarget === 'sun');
+            document.getElementById('btn-moon').className = activeTarget === 'moon' ? 'p-5 rounded-2xl bg-yellow-500 text-black shadow-xl scale-110' : 'p-5 rounded-2xl bg-white/5 border border-white/10 text-white transition-all shadow-xl';
+            document.getElementById('btn-sun').className = activeTarget === 'sun' ? 'p-5 rounded-2xl bg-orange-500 text-black shadow-xl scale-110' : 'p-5 rounded-2xl bg-white/5 border border-white/10 text-white transition-all shadow-xl';
         }
 
         function openGPSModal() { document.getElementById('gps-modal').classList.remove('hidden'); }
@@ -435,22 +473,22 @@
 
         function setGPSMode(manual) {
             isManualGPS = manual;
-            document.getElementById('btn-auto-gps').className = !manual ? "py-3 rounded-xl border border-blue-500 bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase" : "py-3 rounded-xl border border-white/10 bg-white/5 text-gray-400 text-[10px] font-bold uppercase";
-            document.getElementById('btn-manual-gps').className = manual ? "py-3 rounded-xl border border-blue-500 bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase" : "py-3 rounded-xl border border-white/10 bg-white/5 text-gray-400 text-[10px] font-bold uppercase";
+            document.getElementById('btn-auto-gps').classList.toggle('bg-blue-500/20', !manual);
+            document.getElementById('btn-manual-gps').classList.toggle('bg-blue-500/20', manual);
             document.getElementById('manual-inputs').style.opacity = manual ? "1" : "0.5";
             document.getElementById('manual-inputs').style.pointerEvents = manual ? "auto" : "none";
         }
 
         function applyManualGPS() {
             if (isManualGPS) {
-                locationData.lat = parseFloat(document.getElementById('input-lat').value);
-                locationData.lon = parseFloat(document.getElementById('input-lon').value);
+                locationData.lat = parseFloat(document.getElementById('input-lat').value) || -6.17;
+                locationData.lon = parseFloat(document.getElementById('input-lon').value) || 106.86;
                 document.getElementById('gps-indicator').className = "w-1.5 h-1.5 rounded-full bg-blue-500";
-                document.getElementById('gps-mode-tag').innerText = "Manual Mode";
+                document.getElementById('gps-mode-tag').innerText = "Manual";
             } else {
                 initGPS();
                 document.getElementById('gps-indicator').className = "w-1.5 h-1.5 rounded-full bg-green-500";
-                document.getElementById('gps-mode-tag').innerText = "Auto GPS";
+                document.getElementById('gps-mode-tag').innerText = "Auto";
             }
             updateLocationUI();
             closeGPSModal();
@@ -468,9 +506,8 @@
         function applyManualTime() {
             const h = parseInt(document.getElementById('manual-hh').value) || 0;
             const m = parseInt(document.getElementById('manual-mm').value) || 0;
-            const s = parseInt(document.getElementById('manual-ss').value) || 0;
             isAutoTime = false;
-            simulatedTime.setHours(h, m, s);
+            simulatedTime.setHours(h, m, 0);
             updateTimeDisplay();
             closeTimeModal();
         }
@@ -492,23 +529,8 @@
             document.getElementById('clock-display').innerText = simulatedTime.toLocaleTimeString('id-ID', { hour12: false });
             document.getElementById('date-display').innerText = simulatedTime.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }).toUpperCase();
             document.getElementById('sim-date').innerText = simulatedTime.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' }).toUpperCase();
-            document.getElementById('mode-label').innerText = isAutoTime ? "REAL-TIME MODE" : "SIMULASI AKTIF";
+            document.getElementById('mode-label').innerText = isAutoTime ? "REAL-TIME" : "SIMULASI";
             updateUI();
-        }
-
-        function initVoice() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) return;
-            const rec = new SpeechRecognition();
-            rec.continuous = true;
-            rec.onresult = e => {
-                const txt = e.results[e.results.length - 1][0].transcript.toLowerCase();
-                if (txt.includes('shoot')) {
-                    const f = document.getElementById('flash-overlay');
-                    f.classList.remove('capture-flash'); void f.offsetWidth; f.classList.add('capture-flash');
-                }
-            };
-            rec.start();
         }
 
         setInterval(() => {
@@ -517,12 +539,6 @@
                 updateTimeDisplay();
             }
         }, 1000);
-
-        function calibrateSensor() {
-            const data = getAstronomy(simulatedTime, locationData.lat, locationData.lon);
-            calOffset.alpha = (data.sun.az - (orientation.alpha - calOffset.alpha));
-            calOffset.beta = (data.sun.al - (orientation.beta - calOffset.beta));
-        }
     </script>
 </body>
 </html>
