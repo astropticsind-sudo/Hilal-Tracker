@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instrumen Falak Digital Pro</title>
+    <title>Instrumen Falak Digital Pro - Voice Command</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -17,16 +17,6 @@
             touch-action: none;
         }
 
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: #f59e0b;
-            cursor: pointer;
-            border: 2px solid white;
-        }
-
         .scanline {
             background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.1) 50%), 
                         linear-gradient(90deg, rgba(255,0,0,0.03), rgba(0,255,0,0.01), rgba(0,0,255,0.03));
@@ -34,174 +24,191 @@
             pointer-events: none;
         }
 
-        .arc-line {
-            stroke-dasharray: 5, 5;
-            transition: all 0.3s ease;
+        .active-target-ring {
+            animation: ring-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes ring-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.05); }
+        }
+
+        .capture-flash {
+            animation: flash-anim 0.2s ease-out;
+        }
+
+        @keyframes flash-anim {
+            0% { background: white; opacity: 1; }
+            100% { background: transparent; opacity: 0; }
         }
     </style>
 </head>
-<body class="bg-black">
+<body class="bg-black text-white">
 
     <div id="app" class="relative w-full h-screen overflow-hidden">
         <!-- Viewfinder Kamera -->
         <div class="absolute inset-0 flex items-center justify-center p-4">
-            <div id="camera-container" class="relative w-full max-w-4xl aspect-video rounded-3xl overflow-hidden border-2 border-red-900/50 shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-slate-900">
+            <div id="camera-container" class="relative w-full max-w-5xl aspect-video rounded-3xl overflow-hidden border-2 border-white/10 bg-slate-950 shadow-2xl">
                 <video id="video" autoplay playsinline class="w-full h-full object-cover opacity-60"></video>
                 <canvas id="overlay-canvas" class="absolute inset-0 z-20 pointer-events-none"></canvas>
+                <div id="flash-overlay" class="absolute inset-0 z-[100] pointer-events-none"></div>
+                
+                <!-- Overlay Scanline -->
                 <div class="absolute inset-0 scanline z-10"></div>
                 
-                <!-- Crosshair -->
+                <!-- Crosshair Tengah -->
                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-                    <div id="crosshair" class="w-40 h-40 border border-white/20 rounded-full flex items-center justify-center">
-                        <div class="w-8 h-px bg-white/40"></div>
-                        <div class="h-8 w-px bg-white/40 absolute"></div>
-                        <div id="target-pointer" class="absolute w-4 h-4 bg-yellow-500 rounded-full blur-sm opacity-0 transition-opacity"></div>
+                    <div class="w-48 h-48 border border-white/10 rounded-full flex items-center justify-center">
+                        <div class="w-12 h-px bg-white/20"></div>
+                        <div class="h-12 w-px bg-white/20 absolute"></div>
                     </div>
                 </div>
 
-                <!-- Tombol Ambil Foto -->
-                <button onclick="takePhoto()" class="absolute right-6 top-1/2 -translate-y-1/2 z-40 w-16 h-16 rounded-full border-4 border-white/50 bg-white/10 flex items-center justify-center active:scale-90 transition-transform">
-                    <div class="w-12 h-12 bg-white rounded-full"></div>
+                <!-- Tombol Ambil Foto (Sisi Kiri) -->
+                <div class="absolute left-8 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-2">
+                    <button onclick="takePhoto()" class="w-20 h-20 rounded-full border-4 border-white/30 bg-white/10 flex items-center justify-center active:scale-90 transition-transform shadow-lg group">
+                        <div class="w-14 h-14 bg-white rounded-full group-hover:scale-95 transition-transform"></div>
+                    </button>
+                    <div class="bg-black/60 px-3 py-1 rounded-full border border-white/10">
+                        <p class="text-[9px] font-bold text-yellow-500 animate-pulse tracking-tighter uppercase">Katakan "SHOOT" untuk memotret</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Posisi Benda Langit (Kiri Atas) -->
+        <div class="absolute top-8 left-8 z-40 space-y-3 pointer-events-none">
+            <!-- Info Matahari -->
+            <div class="p-4 rounded-xl border border-orange-500/30 bg-black/60 backdrop-blur-md w-56">
+                <div class="flex items-center gap-2 mb-2 text-orange-400">
+                    <i data-lucide="sun" size="16"></i>
+                    <span class="text-xs font-black uppercase tracking-widest">Matahari</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-[10px] font-bold">
+                    <div>AZM: <span id="sun-az-val" class="text-white">---</span></div>
+                    <div>ALT: <span id="sun-alt-val" class="text-white">---</span></div>
+                </div>
+            </div>
+            <!-- Info Bulan -->
+            <div class="p-4 rounded-xl border border-yellow-500/30 bg-black/60 backdrop-blur-md w-56">
+                <div class="flex items-center gap-2 mb-2 text-yellow-500">
+                    <i data-lucide="moon" size="16"></i>
+                    <span class="text-xs font-black uppercase tracking-widest">Bulan / Hilal</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-[10px] font-bold">
+                    <div>AZM: <span id="moon-az-val" class="text-white">---</span></div>
+                    <div>ALT: <span id="moon-alt-val" class="text-white">---</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Sensor & Lokasi (Kanan Atas) -->
+        <div class="absolute top-8 right-8 z-40 flex flex-col gap-3 items-end">
+            <div class="p-4 rounded-xl border border-white/10 bg-black/60 backdrop-blur-md text-right">
+                <p class="text-[9px] text-gray-500 mb-1">GPS KOORDINAT</p>
+                <p class="text-xs font-bold text-white"><span id="lat-val">0.0000</span>, <span id="lon-val">0.0000</span></p>
+                <div class="mt-2 pt-2 border-t border-white/5 flex gap-4 justify-end uppercase text-[9px]">
+                    <p>AZ: <span id="az-display" class="text-red-500">0.0°</span></p>
+                    <p>AL: <span id="alt-display" class="text-red-500">0.0°</span></p>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2 pointer-events-auto">
+                <button onclick="setTarget('moon')" id="btn-moon" class="p-4 rounded-2xl bg-yellow-500 text-black shadow-xl">
+                    <i data-lucide="moon" size="24"></i>
+                </button>
+                <button onclick="setTarget('sun')" id="btn-sun" class="p-4 rounded-2xl bg-white/5 text-white border border-white/10">
+                    <i data-lucide="sun" size="24"></i>
+                </button>
+                <button onclick="calibrateSensor()" class="p-4 rounded-full border border-orange-500 bg-orange-500/10 text-orange-500">
+                    <i data-lucide="crosshair" size="24"></i>
                 </button>
             </div>
         </div>
 
-        <!-- Skala Altitude (Y) -->
-        <div class="absolute right-10 top-1/4 bottom-1/4 w-16 flex flex-col justify-between items-end pointer-events-none border-r border-white/10 pr-2">
-            <div class="flex items-center gap-2"><span class="text-[10px] text-white">90°</span><div class="h-px w-4 bg-white"></div></div>
-            <div class="flex items-center gap-2"><span class="text-[10px] text-white">45°</span><div class="h-px w-4 bg-white/60"></div></div>
-            <div class="flex items-center gap-2"><span class="text-[10px] text-red-500 font-bold">0°</span><div class="h-px w-8 bg-red-500"></div></div>
-            <div class="flex items-center gap-2"><span class="text-[10px] text-white">-45°</span><div class="h-px w-4 bg-white/60"></div></div>
-            <div class="flex items-center gap-2"><span class="text-[10px] text-white">-90°</span><div class="h-px w-4 bg-white"></div></div>
+        <!-- Skala Altitude (Kanan) -->
+        <div class="absolute right-12 top-1/3 bottom-1/3 w-16 flex flex-col justify-between items-end border-r border-white/10 pr-2 pointer-events-none">
+            <div class="flex items-center gap-2"><span class="text-[10px]">90°</span><div class="w-4 h-px bg-white/40"></div></div>
+            <div class="flex items-center gap-2"><span class="text-[10px]">45°</span><div class="w-4 h-px bg-white/40"></div></div>
+            <div class="flex items-center gap-2"><span class="text-[10px] text-red-500">0°</span><div class="w-8 h-px bg-red-500"></div></div>
+            <div class="flex items-center gap-2"><span class="text-[10px]">-45°</span><div class="w-4 h-px bg-white/40"></div></div>
             
-            <div id="alt-indicator" class="absolute right-0 w-20 h-8 border border-yellow-500 bg-black/60 flex items-center justify-center z-30" style="top: 50%">
-                <span id="alt-val" class="text-yellow-500 font-bold text-xs">0.0°</span>
+            <div id="alt-indicator" class="absolute right-0 w-24 h-10 border border-white/30 bg-black/80 flex items-center justify-center transition-all duration-150" style="top: 50%">
+                <span id="alt-val" class="text-yellow-500 font-black text-sm">0.0°</span>
             </div>
         </div>
 
-        <!-- Skala Azimuth (X) -->
-        <div class="absolute bottom-48 left-0 right-0 h-12 flex justify-center pointer-events-none">
-            <div class="relative w-3/4 border-t border-white/20 overflow-hidden">
-                <div id="az-scale" class="flex transition-all duration-150 ease-linear absolute left-1/2 h-full items-start">
-                    <!-- Ticks generated by JS -->
+        <!-- Skala Azimuth (Bawah Viewfinder) -->
+        <div class="absolute bottom-60 left-0 right-0 h-16 flex justify-center pointer-events-none">
+            <div class="relative w-2/3 border-t border-white/20 overflow-hidden">
+                <div id="az-scale" class="flex absolute left-1/2 transition-transform duration-150">
+                    <!-- Dinamis via JS -->
                 </div>
-                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-px h-10 bg-red-500 shadow-[0_0_10px_red] z-30"></div>
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-px h-12 bg-red-500 z-10 shadow-[0_0_10px_red]"></div>
             </div>
         </div>
 
-        <!-- Dashboard Atas -->
-        <div class="absolute top-8 left-8 right-8 flex justify-between items-start pointer-events-none">
-            <div class="p-4 rounded-lg border border-red-900/50 bg-black/60 backdrop-blur-md">
-                <div class="flex items-center gap-3 mb-2">
-                    <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                    <span class="text-xs font-black tracking-widest text-white">FALAK_PRO_SYSTEM</span>
-                </div>
-                <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-[10px] uppercase text-gray-300">
-                    <p>LAT: <span id="lat-val" class="text-white">---</span></p>
-                    <p>AZM: <span id="az-display" class="text-white">0.0°</span></p>
-                    <p>LON: <span id="lon-val" class="text-white">---</span></p>
-                    <p>ALT: <span id="alt-display" class="text-white">0.0°</span></p>
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-3 pointer-events-auto">
-                <!-- Target Switcher -->
-                <div class="flex flex-col bg-black/60 p-1 rounded-xl border border-white/10">
-                    <button onclick="setTarget('moon')" id="btn-moon" class="p-3 rounded-lg bg-yellow-500 text-black transition-colors mb-1">
-                        <i data-lucide="moon" size="20"></i>
-                    </button>
-                    <button onclick="setTarget('sun')" id="btn-sun" class="p-3 rounded-lg hover:bg-white/10 text-white transition-colors">
-                        <i data-lucide="sun" size="20"></i>
-                    </button>
-                </div>
-                <!-- Calibration Button -->
-                <button onclick="calibrateSensor()" class="p-3 rounded-full border border-orange-500 bg-orange-500/20 text-orange-500 flex items-center justify-center shadow-[0_0_15px_rgba(249,115,22,0.3)]">
-                    <i data-lucide="refresh-cw" size="20"></i>
-                </button>
+        <!-- Jam Real-Time (Diturunkan sedikit agar tidak tertutup dashboard) -->
+        <div class="absolute top-48 left-1/2 -translate-x-1/2 text-center pointer-events-none z-30">
+            <h1 id="clock-display" class="text-6xl font-black text-white tracking-[0.3em] drop-shadow-2xl">00:00:00</h1>
+            <div class="mt-2 flex items-center justify-center gap-3">
+                <span id="date-display" class="text-[10px] uppercase font-bold text-gray-400 bg-white/5 px-4 py-1 rounded-full border border-white/10">24 JAN 2026</span>
+                <span id="maghrib-display" class="text-[10px] uppercase font-bold text-orange-500 bg-orange-500/10 px-4 py-1 rounded-full border border-orange-500/20">MAGHRIB: 18:12</span>
             </div>
         </div>
 
-        <!-- Jam & Informasi Target (Dipindah agak ke bawah) -->
-        <div class="absolute top-12 left-1/2 -translate-x-1/2 text-center pointer-events-none w-full">
-            <div id="clock-display" class="text-4xl font-black text-white tracking-[0.2em] drop-shadow-lg">00:00:00</div>
-            <div class="mt-4 flex justify-center gap-4">
-                <div class="px-4 py-1 bg-black/80 border border-yellow-500/50 rounded-md flex items-center gap-2">
-                   <span class="text-[10px] text-gray-400 uppercase">Target: </span>
-                   <span id="target-name" class="text-[10px] font-bold text-yellow-500">MOON / HILAL</span>
-                </div>
-                <div class="px-4 py-1 bg-black/80 border border-orange-500/50 rounded-md flex items-center gap-2">
-                   <i data-lucide="sunset" class="text-orange-400 w-3 h-3"></i>
-                   <span id="sunset-display" class="text-[10px] text-orange-400 font-bold">MAGHRIB: 18:12</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Panel Kontrol Bawah (Dinaikkan sedikit) -->
-        <div class="absolute bottom-12 left-1/2 -translate-x-1/2 w-[90%] max-w-2xl flex flex-col gap-4">
-            <!-- Data Simulasi Elongasi -->
-            <div class="grid grid-cols-4 gap-2 p-3 rounded-xl border border-white/10 bg-black/80 text-center backdrop-blur-lg">
-                <div class="border-r border-white/5">
-                    <p class="text-[8px] opacity-60 text-white">ELONGASI</p>
-                    <p id="target-elong" class="text-sm font-bold text-yellow-500">0.0°</p>
-                </div>
-                <div class="border-r border-white/5">
-                    <p class="text-[8px] opacity-60 text-white">JARAK SUDUT</p>
-                    <p id="target-dist" class="text-sm font-bold text-white">0.0°</p>
-                </div>
-                <div class="border-r border-white/5">
-                    <p class="text-[8px] opacity-60 text-white">FRAKSI</p>
-                    <p id="moon-phase" class="text-sm font-bold text-white">0.8%</p>
-                </div>
-                <div>
-                    <p class="text-[8px] opacity-60 text-white">UMUR BULAN</p>
-                    <p id="moon-age" class="text-sm font-bold text-white">14j 22m</p>
-                </div>
+        <!-- Panel Kontrol Simulasi (Dinaikkan sedikit) -->
+        <div class="absolute bottom-16 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl flex flex-col gap-4">
+            <!-- Data Navigasi -->
+            <div class="grid grid-cols-4 gap-2 p-3 bg-black/80 border border-white/10 rounded-2xl backdrop-blur-xl text-center">
+                <div><p class="text-[8px] text-gray-500">ELONGASI</p><p id="val-elong" class="text-xs font-bold text-yellow-500">---</p></div>
+                <div class="border-x border-white/5"><p class="text-[8px] text-gray-500">FRAKSI</p><p id="val-illum" class="text-xs font-bold text-white">---</p></div>
+                <div class="border-r border-white/5"><p class="text-[8px] text-gray-500">UMUR BULAN</p><p id="val-age" class="text-xs font-bold text-white">---</p></div>
+                <div><p class="text-[8px] text-gray-500">AR-DIST</p><p id="val-dist" class="text-xs font-bold text-red-500">---</p></div>
             </div>
 
-            <!-- Slider Kontrol Waktu & Hari -->
-            <div class="p-5 rounded-2xl border border-white/10 bg-black/90 backdrop-blur-3xl pointer-events-auto shadow-2xl">
-                <div class="flex flex-col gap-4">
-                    <!-- Simulasi Jam -->
-                    <div class="flex items-center gap-4">
-                        <i data-lucide="clock" class="text-gray-500 w-4 h-4"></i>
-                        <div class="flex-1 relative">
-                            <input id="time-slider" type="range" min="-720" max="720" value="0" class="w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-gray-800 accent-yellow-500">
-                            <div class="flex justify-between mt-2 text-[9px] text-gray-500 font-bold">
-                                <span>-12H</span>
-                                <span id="mode-status" class="text-yellow-500">MODE REAL-TIME</span>
-                                <span>+12H</span>
+            <!-- Kontrol Waktu & Hari -->
+            <div class="p-6 bg-black/90 border border-white/10 rounded-3xl backdrop-blur-3xl shadow-2xl pointer-events-auto">
+                <div class="flex flex-col gap-6">
+                    <!-- Slider Jam -->
+                    <div class="flex items-center gap-6">
+                        <i data-lucide="clock" class="text-gray-500"></i>
+                        <div class="flex-1">
+                            <input id="time-slider" type="range" min="-720" max="720" value="0" class="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-yellow-500">
+                            <div class="flex justify-between mt-2 text-[10px] font-black text-gray-500 uppercase">
+                                <span>-12 Jam</span>
+                                <span id="mode-status" class="text-yellow-500">Real-Time</span>
+                                <span>+12 Jam</span>
                             </div>
                         </div>
-                        <button onclick="resetTime()" class="p-2 bg-white/5 rounded-lg text-white active:bg-yellow-500 active:text-black transition-colors">
-                            <i data-lucide="rotate-ccw" size="18"></i>
+                        <button onclick="resetTime()" class="p-3 bg-white/5 rounded-xl hover:bg-yellow-500 hover:text-black transition-all">
+                            <i data-lucide="rotate-ccw" size="20"></i>
                         </button>
                     </div>
-                    
-                    <!-- Simulasi Hari -->
-                    <div class="flex items-center gap-4">
-                        <i data-lucide="calendar" class="text-gray-500 w-4 h-4"></i>
-                        <div class="flex-1">
-                            <div class="flex justify-between items-center bg-white/5 p-2 rounded-lg">
-                                <button onclick="adjustDay(-1)" class="text-white px-3 border-r border-white/10 hover:text-yellow-500"><i data-lucide="minus" size="16"></i></button>
-                                <span id="date-display" class="text-xs font-bold text-white uppercase tracking-widest">24 JAN 2026</span>
-                                <button onclick="adjustDay(1)" class="text-white px-3 border-l border-white/10 hover:text-yellow-500"><i data-lucide="plus" size="16"></i></button>
-                            </div>
+
+                    <!-- Pemilih Hari -->
+                    <div class="flex items-center gap-6">
+                        <i data-lucide="calendar" class="text-gray-500"></i>
+                        <div class="flex-1 flex justify-between items-center bg-white/5 p-1 rounded-2xl border border-white/5">
+                            <button onclick="adjustDay(-1)" class="p-3 hover:text-yellow-500"><i data-lucide="chevron-left"></i></button>
+                            <span id="sim-date" class="text-xs font-black uppercase tracking-widest text-white">Sabtu, 24 Jan 2026</span>
+                            <button onclick="adjustDay(1)" class="p-3 hover:text-yellow-500"><i data-lucide="chevron-right"></i></button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Overlay Izin -->
-        <div id="overlay" class="absolute inset-0 z-[100] bg-black flex items-center justify-center p-10 text-center">
+        <!-- Overlay Awal -->
+        <div id="overlay" class="absolute inset-0 z-[200] bg-black flex items-center justify-center text-center p-8">
             <div class="max-w-sm">
-                <div class="w-24 h-24 mx-auto mb-8 rounded-full border border-yellow-500/50 flex items-center justify-center text-yellow-500 shadow-[0_0_50px_rgba(245,158,11,0.2)]">
-                    <i data-lucide="compass" size="48"></i>
+                <div class="w-24 h-24 mx-auto mb-8 border-2 border-yellow-500 rounded-full flex items-center justify-center text-yellow-500 animate-pulse">
+                    <i data-lucide="mic" size="48"></i>
                 </div>
-                <h2 class="text-2xl font-black text-white mb-2 tracking-tighter uppercase">Instrumen Falak Digital</h2>
-                <p class="text-[11px] leading-relaxed text-gray-500 mb-10">Gunakan Matahari sebagai titik kalibrasi untuk sinkronisasi sensor yang presisi. Aplikasi ini mensimulasikan posisi Hilal berdasarkan data Astronomis.</p>
-                <button onclick="initApp()" class="w-full py-5 rounded-xl font-bold text-black text-sm tracking-[0.3em] bg-yellow-500 shadow-[0_10px_30px_rgba(245,158,11,0.4)] active:scale-95 transition-all">
-                    SINKRONISASI SISTEM
+                <h2 class="text-2xl font-black text-white mb-4 uppercase tracking-tighter">Instrumen Falak Digital</h2>
+                <p class="text-xs text-gray-500 leading-relaxed mb-10 uppercase font-bold tracking-widest">Akses Kamera, Lokasi, dan Mikrofon diperlukan untuk kalibrasi sistem.</p>
+                <button onclick="initApp()" class="w-full py-5 bg-yellow-500 text-black font-black text-sm rounded-2xl shadow-[0_10px_30px_rgba(245,158,11,0.4)] active:scale-95 transition-transform">
+                    INISIALISASI SISTEM
                 </button>
             </div>
         </div>
@@ -212,35 +219,33 @@
         let calOffset = { alpha: 0, beta: 0 };
         let simulatedTime = new Date();
         let isAutoTime = true;
-        let currentTarget = 'moon'; // 'moon' or 'sun'
+        let currentTarget = 'moon';
+        
         const canvas = document.getElementById('overlay-canvas');
         const ctx = canvas.getContext('2d');
 
-        // Initialize Lucid Icons
+        // Setup UI
         lucide.createIcons();
 
-        // Generate Azimuth Scale with more labels
-        const scale = document.getElementById('az-scale');
+        // Skala Azimuth
+        const azScale = document.getElementById('az-scale');
         for (let i = 0; i <= 360; i += 5) {
-            const div = document.createElement('div');
-            div.className = 'flex flex-col items-center w-[60px] shrink-0 text-white';
+            const tick = document.createElement('div');
+            tick.className = 'flex flex-col items-center w-[60px] shrink-0';
             const isMajor = i % 15 === 0;
-            div.innerHTML = `
-                <div class="w-px ${isMajor ? 'h-6 bg-yellow-500' : 'h-3 bg-white/30'}"></div>
-                ${isMajor ? `<span class="text-[10px] mt-1 font-bold">${i}°</span>` : ''}
-                ${i === 0 ? '<span class="text-[10px] font-black text-red-500">UTARA</span>' : ''}
-                ${i === 90 ? '<span class="text-[10px] font-black text-blue-400">TIMUR</span>' : ''}
-                ${i === 180 ? '<span class="text-[10px] font-black text-green-400">SELATAN</span>' : ''}
-                ${i === 270 ? '<span class="text-[10px] font-black text-orange-400">BARAT</span>' : ''}
+            tick.innerHTML = `
+                <div class="w-px ${isMajor ? 'h-8 bg-yellow-500' : 'h-4 bg-white/30'}"></div>
+                ${isMajor ? `<span class="text-[10px] mt-2 font-black text-white">${i}°</span>` : ''}
             `;
-            scale.appendChild(div);
+            azScale.appendChild(tick);
         }
 
-        function initApp() {
+        async function initApp() {
             document.getElementById('overlay').classList.add('hidden');
             resizeCanvas();
             startCamera();
             startGPS();
+            initVoiceControl();
             
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission().then(state => {
@@ -261,43 +266,59 @@
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 document.getElementById('video').srcObject = stream;
-            } catch (err) {
-                console.error("Kamera akses ditolak");
-            }
+            } catch (err) { console.error("Kamera gagal"); }
         }
 
         function startGPS() {
-            navigator.geolocation.getCurrentPosition(pos => {
+            navigator.geolocation.watchPosition(pos => {
                 document.getElementById('lat-val').innerText = pos.coords.latitude.toFixed(4);
                 document.getElementById('lon-val').innerText = pos.coords.longitude.toFixed(4);
             });
+        }
+
+        function initVoiceControl() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return;
+
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.lang = 'en-US';
+            
+            recognition.onresult = (event) => {
+                const last = event.results.length - 1;
+                const command = event.results[last][0].transcript.toLowerCase();
+                if (command.includes('shoot')) {
+                    takePhoto();
+                }
+            };
+            
+            recognition.start();
         }
 
         function handleOrientation(e) {
             let az = e.alpha ? (360 - e.alpha) : 0;
             let alt = e.beta ? (e.beta - 90) : 0;
             
-            orientation.alpha = (az + calOffset.alpha) % 360;
+            orientation.alpha = (az + calOffset.alpha + 360) % 360;
             orientation.beta = alt + calOffset.beta;
             updateUI();
         }
 
         function setTarget(type) {
             currentTarget = type;
-            document.getElementById('target-name').innerText = type === 'moon' ? 'MOON / HILAL' : 'SUN / MATAHARI';
-            document.getElementById('btn-moon').className = type === 'moon' ? 'p-3 rounded-lg bg-yellow-500 text-black' : 'p-3 rounded-lg hover:bg-white/10 text-white';
-            document.getElementById('btn-sun').className = type === 'sun' ? 'p-3 rounded-lg bg-yellow-500 text-black' : 'p-3 rounded-lg hover:bg-white/10 text-white';
+            document.getElementById('btn-moon').className = type === 'moon' ? 'p-4 rounded-2xl bg-yellow-500 text-black' : 'p-4 rounded-2xl bg-white/5 text-white border border-white/10';
+            document.getElementById('btn-sun').className = type === 'sun' ? 'p-4 rounded-2xl bg-yellow-500 text-black' : 'p-4 rounded-2xl bg-white/5 text-white border border-white/10';
         }
 
         function calibrateSensor() {
-            // Gunakan posisi matahari saat ini untuk mengkalibrasi sensor
             const sunPos = calculateSun(simulatedTime);
-            // Hitung selisih antara pembacaan sensor mentah dan posisi astronomis
-            // offset = astronomis - sensor
             calOffset.alpha = (sunPos.azimuth - (orientation.alpha - calOffset.alpha));
             calOffset.beta = (sunPos.altitude - (orientation.beta - calOffset.beta));
             
-            alert("Sistem Berhasil Dikalibrasi ke Matahari");
+            // Visual feedback
+            const btn = event.currentTarget;
+            btn.classList.add('bg-green-500', 'text-black');
+            setTimeout(() => btn.classList.remove('bg-green-500', 'text-black'), 1000);
         }
 
         function updateUI() {
@@ -307,72 +328,64 @@
             document.getElementById('alt-indicator').style.top = `${50 - orientation.beta * 2}%`;
             document.getElementById('az-scale').style.transform = `translateX(-${orientation.alpha * 4}px)`;
 
-            const sunPos = calculateSun(simulatedTime);
-            const moonPos = calculateMoon(simulatedTime);
+            const sun = calculateSun(simulatedTime);
+            const moon = calculateMoon(simulatedTime);
             
-            const activeTarget = currentTarget === 'moon' ? moonPos : sunPos;
-            document.getElementById('target-elong').innerText = moonPos.elongation + "°";
+            // Update Panel Info
+            document.getElementById('sun-az-val').innerText = sun.azimuth.toFixed(1) + "°";
+            document.getElementById('sun-alt-val').innerText = sun.altitude.toFixed(1) + "°";
+            document.getElementById('moon-az-val').innerText = moon.azimuth.toFixed(1) + "°";
+            document.getElementById('moon-alt-val').innerText = moon.altitude.toFixed(1) + "°";
             
-            // Jarak sudut antara target dan arah kamera
-            const distToTarget = Math.sqrt(Math.pow(orientation.alpha - activeTarget.azimuth, 2) + Math.pow(orientation.beta - activeTarget.altitude, 2));
-            document.getElementById('target-dist').innerText = distToTarget.toFixed(1) + "°";
+            document.getElementById('val-elong').innerText = moon.elongation + "°";
+            document.getElementById('val-illum').innerText = "0.82%";
+            document.getElementById('val-age').innerText = "14j 22m";
 
-            drawAR(sunPos, moonPos);
+            const activeTarget = currentTarget === 'moon' ? moon : sun;
+            const dist = Math.sqrt(Math.pow(orientation.alpha - activeTarget.azimuth, 2) + Math.pow(orientation.beta - activeTarget.altitude, 2));
+            document.getElementById('val-dist').innerText = dist.toFixed(2) + "°";
+
+            drawAR(sun, moon);
         }
 
         function drawAR(sun, moon) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Konversi Az/Alt ke Koordinat Layar (Simulasi sederhana)
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            const scaleFactor = 40; // pixel per degree
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const sf = 45; // scale factor
 
-            const getScreenPos = (pos) => {
-                const dx = (pos.azimuth - orientation.alpha) * scaleFactor;
-                const dy = (orientation.beta - pos.altitude) * scaleFactor;
-                return { x: centerX + dx, y: centerY + dy };
-            };
+            const getScreen = (pos) => ({
+                x: cx + (pos.azimuth - orientation.alpha) * sf,
+                y: cy + (orientation.beta - pos.altitude) * sf
+            });
 
-            const sunScreen = getScreenPos(sun);
-            const moonScreen = getScreenPos(moon);
+            const sPos = getScreen(sun);
+            const mPos = getScreen(moon);
 
-            // Gambar Garis Elongasi (Busur)
+            // Garis Elongasi
             ctx.beginPath();
             ctx.setLineDash([5, 5]);
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-            ctx.lineWidth = 1;
-            ctx.moveTo(sunScreen.x, sunScreen.y);
-            ctx.lineTo(moonScreen.x, moonScreen.y);
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+            ctx.moveTo(sPos.x, sPos.y);
+            ctx.lineTo(mPos.x, mPos.y);
             ctx.stroke();
-            ctx.setLineDash([]);
 
-            // Gambar Matahari
-            ctx.fillStyle = "rgba(255, 165, 0, 0.6)";
-            ctx.beginPath();
-            ctx.arc(sunScreen.x, sunScreen.y, 15, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Gambar Bulan/Hilal
-            ctx.fillStyle = "rgba(255, 255, 0, 0.8)";
-            ctx.beginPath();
-            ctx.arc(moonScreen.x, moonScreen.y, 10, 0, Math.PI * 2);
-            ctx.fill();
+            // Matahari
+            ctx.fillStyle = "rgba(249, 115, 22, 0.6)";
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = "orange";
+            ctx.beginPath(); ctx.arc(sPos.x, sPos.y, 20, 0, Math.PI*2); ctx.fill();
 
-            // Highlight Target Aktif
-            const activePos = currentTarget === 'moon' ? moonScreen : sunScreen;
-            const pointer = document.getElementById('target-pointer');
-            if (activePos.x > 0 && activePos.x < canvas.width && activePos.y > 0 && activePos.y < canvas.height) {
-                pointer.style.opacity = "1";
-                pointer.style.transform = `translate(${activePos.x - centerX}px, ${activePos.y - centerY}px)`;
-            } else {
-                pointer.style.opacity = "0";
-            }
+            // Bulan
+            ctx.fillStyle = "rgba(234, 179, 8, 0.8)";
+            ctx.shadowColor = "yellow";
+            ctx.beginPath(); ctx.arc(mPos.x, mPos.y, 12, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
         }
 
+        // Algoritma simulasi posisi sederhana
         function calculateSun(time) {
-            const h = time.getHours() + time.getMinutes() / 60;
-            // Simulasi gerak matahari (Terbit timur 06:00, terbenam barat 18:00)
+            const h = time.getHours() + time.getMinutes()/60;
             return {
                 azimuth: (90 + (h - 6) * 15) % 360,
                 altitude: 90 * Math.sin((h - 6) * Math.PI / 12)
@@ -381,25 +394,27 @@
 
         function calculateMoon(time) {
             const sun = calculateSun(time);
-            const h = time.getHours() + time.getMinutes() / 60;
-            const sunset = 18.2;
-            const diff = h - sunset;
+            const h = time.getHours() + time.getMinutes()/60;
+            const diff = h - 18.2;
             return {
-                azimuth: (sun.azimuth + 5 + diff * 0.5) % 360,
-                altitude: (sun.altitude + 8.5 - (diff * diff * 2)),
+                azimuth: (sun.azimuth + 5.2 + diff * 0.4) % 360,
+                altitude: (sun.altitude + 8.4 - (diff * diff * 1.5)),
                 elongation: (7.2 + diff * 0.1).toFixed(1)
             };
         }
 
-        function adjustTime(mins) {
-            isAutoTime = false;
-            simulatedTime = new Date(simulatedTime.getTime() + mins * 60000);
-            updateTimeDisplay();
+        function takePhoto() {
+            const flash = document.getElementById('flash-overlay');
+            flash.classList.add('capture-flash');
+            setTimeout(() => flash.classList.remove('capture-flash'), 200);
+            
+            // Logika download/save bisa ditambahkan di sini
+            console.log("Foto Diambil via " + (event ? "Klik" : "Suara"));
         }
 
-        function adjustDay(days) {
+        function adjustDay(d) {
             isAutoTime = false;
-            simulatedTime.setDate(simulatedTime.getDate() + days);
+            simulatedTime.setDate(simulatedTime.getDate() + d);
             updateTimeDisplay();
         }
 
@@ -409,39 +424,16 @@
             updateTimeDisplay();
         }
 
-        function takePhoto() {
-            const video = document.getElementById('video');
-            const captureCanvas = document.createElement('canvas');
-            captureCanvas.width = video.videoWidth;
-            captureCanvas.height = video.videoHeight;
-            const cctx = captureCanvas.getContext('2d');
-            cctx.drawImage(video, 0, 0);
-            
-            // Simulasi flash
-            const overlay = document.createElement('div');
-            overlay.className = "fixed inset-0 bg-white z-[200] pointer-events-none opacity-0 transition-opacity duration-100";
-            document.body.appendChild(overlay);
-            setTimeout(() => overlay.style.opacity = "1", 10);
-            setTimeout(() => {
-                overlay.style.opacity = "0";
-                setTimeout(() => overlay.remove(), 100);
-            }, 100);
-
-            console.log("Foto Berhasil Diambil");
-        }
-
         function updateTimeDisplay() {
             document.getElementById('clock-display').innerText = simulatedTime.toLocaleTimeString('id-ID', { hour12: false });
-            document.getElementById('mode-status').innerText = isAutoTime ? "MODE REAL-TIME" : "SIMULASI AKTIF";
-            document.getElementById('date-display').innerText = simulatedTime.toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
+            document.getElementById('sim-date').innerText = simulatedTime.toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'short', year:'numeric'});
+            document.getElementById('mode-status').innerText = isAutoTime ? "Real-Time" : "Simulasi Aktif";
             updateUI();
         }
 
         document.getElementById('time-slider').addEventListener('input', (e) => {
-            const val = parseInt(e.target.value);
-            const now = new Date();
-            simulatedTime = new Date(now.getTime() + val * 60000);
             isAutoTime = false;
+            simulatedTime = new Date(new Date().getTime() + e.target.value * 60000);
             updateTimeDisplay();
         });
 
