@@ -39,8 +39,304 @@
         // Database Super Lengkap: Seluruh Tipe Kamera Astronomi (ZWO, Player One, Svbony, QHYCCD, ToupTek)
         const cameraDatabase = [
             // ==================== ZWO ASTRONOMY ====================
-            { id: "zwo-asi6200mc", name: "ASI6200MC Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX455 (Color)", resolution: "9576 x 6388 (61 MP)", pixelSize: "3.76 µm", sensorSize: "Full Frame", qe: "91%", adc: "16-bit", readNoise: "1.2 - 3.3e-", cooling: "TEC -35°C", priceTier: "$$" },             { id: "zwo-asi6200mm", name: "ASI6200MM Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX455 (Mono)", resolution: "9576 x 6388 (61 MP)", pixelSize: "3.76 µm", sensorSize: "Full Frame", qe: "91\%", adc: "16-bit", readNoise: "1.0 - 3.2e-", cooling: "TEC -35°C", priceTier: "$$" },
-            { id: "zwo-asi2400mc", name: "ASI2400MC Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX410 (Color)", resolution: "6072 x 4042 (24 MP)", pixelSize: "5.94 µm", sensorSize: "Full Frame", qe: "87%", adc: "14-bit", readNoise: "1.1 - 3.5e-", cooling: "TEC -35°C", priceTier: "$$" },             { id: "zwo-asi2600mc", name: "ASI2600MC Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX571 (Color)", resolution: "6248 x 4176 (26 MP)", pixelSize: "3.76 µm", sensorSize: "APS-C", qe: "91\%", adc: "16-bit", readNoise: "1.0 - 3.3e-", cooling: "TEC -35°C", priceTier: "$$" },
-            { id: "zwo-asi2600mm", name: "ASI2600MM Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX571 (Mono)", resolution: "6248 x 4176 (26 MP)", pixelSize: "3.76 µm", sensorSize: "APS-C", qe: "91%", adc: "16-bit", readNoise: "1.0 - 3.3e-", cooling: "TEC -35°C", priceTier: "$$" },             { id: "zwo-asi071mc", name: "ASI071MC Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX071 (Color)", resolution: "4944 x 3284 (16.2 MP)", pixelSize: "4.78 µm", sensorSize: "APS-C", qe: "75\%", adc: "14-bit", readNoise: "2.2 - 3.6e-", cooling: "TEC -35°C", priceTier: "$$" },
+            { id: "zwo-asi6200mc", name: "ASI6200MC Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX455 (Color)", resolution: "9576 x 6388 (61 MP)", pixelSize: "3.76 µm", sensorSize: "Full Frame", qe: "91%", adc: "16-bit", readNoise: "1.2 - 3.3e-", cooling: "TEC -35°C", priceTier: "$$" },
+            { id: "zwo-asi6200mm", name: "ASI6200MM Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX455 (Mono)", resolution: "9576 x 6388 (61 MP)", pixelSize: "3.76 µm", sensorSize: "Full Frame", qe: "91%", adc: "16-bit", readNoise: "1.0 - 3.2e-", cooling: "TEC -35°C", priceTier: "$$" },
+            { id: "zwo-asi2400mc", name: "ASI2400MC Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX410 (Color)", resolution: "6072 x 4042 (24 MP)", pixelSize: "5.94 µm", sensorSize: "Full Frame", qe: "87%", adc: "14-bit", readNoise: "1.1 - 3.5e-", cooling: "TEC -35°C", priceTier: "$$" },
+            { id: "zwo-asi2600mc", name: "ASI2600MC Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX571 (Color)", resolution: "6248 x 4176 (26 MP)", pixelSize: "3.76 µm", sensorSize: "APS-C", qe: "91%", adc: "16-bit", readNoise: "1.0 - 3.3e-", cooling: "TEC -35°C", priceTier: "$$" },
+            { id: "zwo-asi2600mm", name: "ASI2600MM Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX571 (Mono)", resolution: "6248 x 4176 (26 MP)", pixelSize: "3.76 µm", sensorSize: "APS-C", qe: "91%", adc: "16-bit", readNoise: "1.0 - 3.3e-", cooling: "TEC -35°C", priceTier: "$$" },
+            { id: "zwo-asi071mc", name: "ASI071MC Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX071 (Color)", resolution: "4944 x 3284 (16.2 MP)", pixelSize: "4.78 µm", sensorSize: "APS-C", qe: "75%", adc: "14-bit", readNoise: "2.2 - 3.6e-", cooling: "TEC -35°C", priceTier: "$$" },
             { id: "zwo-asi533mc", name: "ASI533MC Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX533 (Color)", resolution: "3008 x 3008 (9 MP)", pixelSize: "3.76 µm", sensorSize: "1 inch", qe: "91%", adc: "14-bit", readNoise: "1.0 - 3.8e-", cooling: "TEC -35°C", priceTier: "$" },
-            { id: "zwo-asi533mm", name: "ASI533MM Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX533 (Mono)", resolution: "3008 x 3008
+            { id: "zwo-asi533mm", name: "ASI533MM Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX533 (Mono)", resolution: "3008 x 3008 (9 MP)", pixelSize: "3.76 µm", sensorSize: "1 inch", qe: "91%", adc: "14-bit", readNoise: "1.0 - 3.8e-", cooling: "TEC -35°C", priceTier: "$" },
+            { id: "zwo-asi585mc", name: "ASI585MC Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX585 (Color)", resolution: "3840 x 2160 (8.3 MP)", pixelSize: "2.9 µm", sensorSize: "1/1.2 inch", qe: "91%", adc: "12-bit", readNoise: "1.5 - 6.5e-", cooling: "TEC -35°C", priceTier: "$" },
+            { id: "zwo-asi294mc", name: "ASI294MC Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX294 (Color)", resolution: "4144 x 2822 (11.7 MP)", pixelSize: "4.63 µm", sensorSize: "4/3 inch", qe: "75%", adc: "14-bit", readNoise: "1.2 - 7.3e-", cooling: "TEC -35°C", priceTier: "$" },
+            { id: "zwo-asi294mm", name: "ASI294MM Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX492 (Mono)", resolution: "4144 x 2822 (11.7 MP)", pixelSize: "4.63 µm", sensorSize: "4/3 inch", qe: "75%", adc: "14-bit", readNoise: "1.2 - 7.3e-", cooling: "TEC -35°C", priceTier: "$" },
+            { id: "zwo-asi183mc", name: "ASI183MC Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX183 (Color)", resolution: "5440 x 3648 (20.2 MP)", pixelSize: "2.4 µm", sensorSize: "1 inch", qe: "84%", adc: "12-bit", readNoise: "1.6 - 3.7e-", cooling: "TEC -40°C", priceTier: "$" },
+            { id: "zwo-asi183mm", name: "ASI183MM Pro", brand: "ZWO", type: "Deep Sky (Cooled)", sensor: "Sony IMX183 (Mono)", resolution: "5440 x 3648 (20.2 MP)", pixelSize: "2.4 µm", sensorSize: "1 inch", qe: "84%", adc: "12-bit", readNoise: "1.6 - 3.7e-", cooling: "TEC -40°C", priceTier: "$" },
+            { id: "zwo-asi462mc", name: "ASI462MC", brand: "ZWO", type: "Planetary", sensor: "Sony IMX462 (Color)", resolution: "1936 x 1096 (2.1 MP)", pixelSize: "2.9 µm", sensorSize: "1/2.8 inch", qe: "89%", adc: "12-bit", readNoise: "0.56e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "zwo-asi662mc", name: "ASI662MC", brand: "ZWO", type: "Planetary", sensor: "Sony IMX662 (Color)", resolution: "1920 x 1080 (2.0 MP)", pixelSize: "2.9 µm", sensorSize: "1/2.8 inch", qe: "91%", adc: "12-bit", readNoise: "0.8e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "zwo-asi678mc", name: "ASI678MC", brand: "ZWO", type: "Planetary", sensor: "Sony IMX678 (Color)", resolution: "3840 x 2160 (8.3 MP)", pixelSize: "2.0 µm", sensorSize: "1/1.8 inch", qe: "83%", adc: "12-bit", readNoise: "1.0e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "zwo-asi224mc", name: "ASI224MC", brand: "ZWO", type: "Planetary", sensor: "Sony IMX224 (Color)", resolution: "1304 x 976 (1.2 MP)", pixelSize: "3.75 µm", sensorSize: "1/3 inch", qe: "75-80%", adc: "12-bit", readNoise: "1.5e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "zwo-asi178mc", name: "ASI178MC", brand: "ZWO", type: "Planetary", sensor: "Sony IMX178 (Color)", resolution: "3096 x 2080 (6.4 MP)", pixelSize: "2.4 µm", sensorSize: "1/1.8 inch", qe: "81%", adc: "14-bit", readNoise: "1.4e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "zwo-asi178mm", name: "ASI178MM", brand: "ZWO", type: "Planetary", sensor: "Sony IMX178 (Mono)", resolution: "3096 x 2080 (6.4 MP)", pixelSize: "2.4 µm", sensorSize: "1/1.8 inch", qe: "81%", adc: "14-bit", readNoise: "1.4e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "zwo-asi120mc-s", name: "ASI120MC-S", brand: "ZWO", type: "Planetary", sensor: "Aptina AR0130CS (Color)", resolution: "1280 x 960 (1.2 MP)", pixelSize: "3.75 µm", sensorSize: "1/3 inch", qe: "75%", adc: "12-bit", readNoise: "3.3e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "zwo-asi120mm-mini", name: "ASI120MM Mini", brand: "ZWO", type: "Guide Cam", sensor: "Aptina AR0130CS (Mono)", resolution: "1280 x 960 (1.2 MP)", pixelSize: "3.75 µm", sensorSize: "1/3 inch", qe: "75%", adc: "12-bit", readNoise: "3.3e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "zwo-asi220mm-mini", name: "ASI220MM Mini", brand: "ZWO", type: "Guide Cam", sensor: "SC2210 (Mono)", resolution: "1920 x 1080 (2.0 MP)", pixelSize: "4.0 µm", sensorSize: "1/1.8 inch", qe: "92%", adc: "12-bit", readNoise: "0.6e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "zwo-asi174mm-mini", name: "ASI174MM Mini", brand: "ZWO", type: "Guide Cam", sensor: "Sony IMX174 (Mono)", resolution: "1936 x 1216 (2.3 MP)", pixelSize: "5.86 µm", sensorSize: "1/1.2 inch", qe: "77%", adc: "12-bit", readNoise: "6.5e-", cooling: "Uncooled", priceTier: "$" },
+
+            // ==================== PLAYER ONE ASTRONOMY ====================
+            { id: "po-poseidon-m", name: "Poseidon-M Pro", brand: "Player One", type: "Deep Sky (Cooled)", sensor: "Sony IMX455 (Mono)", resolution: "9576 x 6388 (61 MP)", pixelSize: "3.76 µm", sensorSize: "Full Frame", qe: "91%", adc: "16-bit", readNoise: "1.0 - 3.2e-", cooling: "TEC -30°C", priceTier: "$$" },
+            { id: "po-poseidon-c", name: "Poseidon-C Pro", brand: "Player One", type: "Deep Sky (Cooled)", sensor: "Sony IMX455 (Color)", resolution: "9576 x 6388 (61 MP)", pixelSize: "3.76 µm", sensorSize: "Full Frame", qe: "91%", adc: "16-bit", readNoise: "1.0 - 3.2e-", cooling: "TEC -30°C", priceTier: "$$" },
+            { id: "po-zeus-m", name: "Zeus-M Pro", brand: "Player One", type: "Deep Sky (Cooled)", sensor: "Sony IMX533 (Mono)", resolution: "3008 x 3008 (9 MP)", pixelSize: "3.76 µm", sensorSize: "1 inch", qe: "91%", adc: "14-bit", readNoise: "1.0 - 3.8e-", cooling: "TEC -30°C", priceTier: "$" },
+            { id: "po-ares-c", name: "Ares-C Pro", brand: "Player One", type: "Deep Sky (Cooled)", sensor: "Sony IMX533 (Color)", resolution: "3008 x 3008 (9 MP)", pixelSize: "3.76 µm", sensorSize: "1 inch", qe: "91%", adc: "14-bit", readNoise: "1.0 - 3.8e-", cooling: "TEC -30°C", priceTier: "$" },
+            { id: "po-artemis-c", name: "Artemis-C Pro", brand: "Player One", type: "Deep Sky (Cooled)", sensor: "Sony IMX585 (Color)", resolution: "3840 x 2160 (8.3 MP)", pixelSize: "2.9 µm", sensorSize: "1/1.2 inch", qe: "91%", adc: "12-bit", readNoise: "1.5e-", cooling: "TEC -30°C", priceTier: "$" },
+            { id: "po-apollo-m", name: "Apollo-M Max", brand: "Player One", type: "Deep Sky (Cooled)", sensor: "Sony IMX432 (Mono)", resolution: "1608 x 1104 (1.78 MP)", pixelSize: "9.0 µm", sensorSize: "1.1 inch", qe: "75%", adc: "12-bit", readNoise: "2.4e-", cooling: "TEC -30°C", priceTier: "$" },
+            { id: "po-mars-c", name: "Mars-C II", brand: "Player One", type: "Planetary", sensor: "Sony IMX662 (Color)", resolution: "1920 x 1080 (2.0 MP)", pixelSize: "2.9 µm", sensorSize: "1/2.8 inch", qe: "91%", adc: "12-bit", readNoise: "0.8e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "po-neptune-c", name: "Neptune-C II", brand: "Player One", type: "Planetary", sensor: "Sony IMX464 (Color)", resolution: "2712 x 1538 (4.2 MP)", pixelSize: "2.9 µm", sensorSize: "1/1.8 inch", qe: "80%", adc: "12-bit", readNoise: "0.7e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "po-uranus-c", name: "Uranus-C", brand: "Player One", type: "Planetary", sensor: "Sony IMX585 (Color)", resolution: "3840 x 2160 (8.3 MP)", pixelSize: "2.9 µm", sensorSize: "1/1.2 inch", qe: "91%", adc: "12-bit", readNoise: "1.5e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "po-ceres-m", name: "Ceres-M", brand: "Player One", type: "Guide Cam", sensor: "Sony IMX224 (Mono)", resolution: "1304 x 976 (1.2 MP)", pixelSize: "3.75 µm", sensorSize: "1/3 inch", qe: "80%", adc: "12-bit", readNoise: "1.5e-", cooling: "Uncooled", priceTier: "Budget" },
+
+            // ==================== SVBONY ====================
+            { id: "sv-sv405cc", name: "SV405CC Cooled", brand: "Svbony", type: "Deep Sky (Cooled)", sensor: "Sony IMX533 (Color)", resolution: "3008 x 3008 (9 MP)", pixelSize: "3.76 µm", sensorSize: "1 inch", qe: "91%", adc: "14-bit", readNoise: "1.0 - 3.5e-", cooling: "TEC -30°C", priceTier: "$" },
+            { id: "sv-sv305", name: "SV305 Pro", brand: "Svbony", type: "Planetary", sensor: "Sony IMX290 (Color)", resolution: "1920 x 1080 (2.0 MP)", pixelSize: "2.9 µm", sensorSize: "1/2.8 inch", qe: "80%", adc: "12-bit", readNoise: "1.2e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "sv-sv705c", name: "SV705C", brand: "Svbony", type: "Planetary", sensor: "Sony IMX585 (Color)", resolution: "3840 x 2160 (8.3 MP)", pixelSize: "2.9 µm", sensorSize: "1/1.2 inch", qe: "91%", adc: "12-bit", readNoise: "1.5e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "sv-sv905c", name: "SV905C Guide", brand: "Svbony", type: "Guide Cam", sensor: "Sony IMX225 (Color)", resolution: "1280 x 960 (1.2 MP)", pixelSize: "3.75 µm", sensorSize: "1/3 inch", qe: "75%", adc: "12-bit", readNoise: "1.5e-", cooling: "Uncooled", priceTier: "Budget" },
+
+            // ==================== QHYCCD ====================
+            { id: "qhy-600m", name: "QHY600M Pro", brand: "QHYCCD", type: "Deep Sky (Cooled)", sensor: "Sony IMX455 (Mono)", resolution: "9576 x 6388 (61 MP)", pixelSize: "3.76 µm", sensorSize: "Full Frame", qe: "91%", adc: "16-bit", readNoise: "1.0 - 3.5e-", cooling: "TEC -35°C", priceTier: "$$" },
+            { id: "qhy-268m", name: "QHY268M Pro", brand: "QHYCCD", type: "Deep Sky (Cooled)", sensor: "Sony IMX571 (Mono)", resolution: "6248 x 4176 (26 MP)", pixelSize: "3.76 µm", sensorSize: "APS-C", qe: "91%", adc: "16-bit", readNoise: "1.0 - 3.3e-", cooling: "TEC -35°C", priceTier: "$$" },
+            { id: "qhy-294m", name: "QHY294M Pro", brand: "QHYCCD", type: "Deep Sky (Cooled)", sensor: "Sony IMX492 (Mono)", resolution: "4144 x 2822 (11.7 MP)", pixelSize: "4.63 µm", sensorSize: "4/3 inch", qe: "75%", adc: "14-bit", readNoise: "1.0 - 6.8e-", cooling: "TEC -35°C", priceTier: "$" },
+            { id: "qhy-5iii715c", name: "QHY5III 715C", brand: "QHYCCD", type: "Planetary", sensor: "Sony IMX715 (Color)", resolution: "3864 x 2192 (8.46 MP)", pixelSize: "1.45 µm", sensorSize: "1/2.8 inch", qe: "80%", adc: "12-bit", readNoise: "0.75e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "qhy-5iii462c", name: "QHY5III 462C", brand: "QHYCCD", type: "Guide Cam", sensor: "Sony IMX462 (Color)", resolution: "1936 x 1096 (2.1 MP)", pixelSize: "2.9 µm", sensorSize: "1/2.8 inch", qe: "89%", adc: "12-bit", readNoise: "0.56e-", cooling: "Uncooled", priceTier: "Budget" },
+
+            // ==================== TOUPTEK ASTRO (LENGKAP) ====================
+            { id: "tp-skyeye62ac", name: "SkyEye62AC Plus", brand: "ToupTek", type: "Deep Sky (Cooled)", sensor: "Sony IMX455 (Color)", resolution: "9576 x 6388 (61 MP)", pixelSize: "3.76 µm", sensorSize: "Full Frame", qe: "91%", adc: "16-bit", readNoise: "1.2 - 3.3e-", cooling: "TEC -35°C", priceTier: "$$" },
+            { id: "tp-skyeye62am", name: "SkyEye62AM Plus", brand: "ToupTek", type: "Deep Sky (Cooled)", sensor: "Sony IMX455 (Mono)", resolution: "9576 x 6388 (61 MP)", pixelSize: "3.76 µm", sensorSize: "Full Frame", qe: "91%", adc: "16-bit", readNoise: "1.0 - 3.2e-", cooling: "TEC -35°C", priceTier: "$$" },
+            { id: "tp-skyeye26ac", name: "SkyEye26AC Plus", brand: "ToupTek", type: "Deep Sky (Cooled)", sensor: "Sony IMX571 (Color)", resolution: "6248 x 4176 (26 MP)", pixelSize: "3.76 µm", sensorSize: "APS-C", qe: "91%", adc: "16-bit", readNoise: "1.0 - 3.3e-", cooling: "TEC -35°C", priceTier: "$" },
+            { id: "tp-skyeye26am", name: "SkyEye26AM Plus", brand: "ToupTek", type: "Deep Sky (Cooled)", sensor: "Sony IMX571 (Mono)", resolution: "6248 x 4176 (26 MP)", pixelSize: "3.76 µm", sensorSize: "APS-C", qe: "91%", adc: "16-bit", readNoise: "1.0 - 3.3e-", cooling: "TEC -35°C", priceTier: "$" },
+            { id: "tp-atr2600c", name: "ATR2600C", brand: "ToupTek", type: "Deep Sky (Cooled)", sensor: "Sony IMX571 (Color)", resolution: "6248 x 4176 (26 MP)", pixelSize: "3.76 µm", sensorSize: "APS-C", qe: "91%", adc: "16-bit", readNoise: "1.0 - 3.3e-", cooling: "TEC -35°C", priceTier: "$" },
+            { id: "tp-atr533c", name: "ATR533C", brand: "ToupTek", type: "Deep Sky (Cooled)", sensor: "Sony IMX533 (Color)", resolution: "3008 x 3008 (9 MP)", pixelSize: "3.76 µm", sensorSize: "1 inch", qe: "91%", adc: "14-bit", readNoise: "1.0 - 3.8e-", cooling: "TEC -35°C", priceTier: "$" },
+            { id: "tp-atr585c", name: "ATR585C", brand: "ToupTek", type: "Deep Sky (Cooled)", sensor: "Sony IMX585 (Color)", resolution: "3840 x 2160 (8.3 MP)", pixelSize: "2.9 µm", sensorSize: "1/1.2 inch", qe: "91%", adc: "12-bit", readNoise: "1.6e-", cooling: "TEC -47°C", priceTier: "$" },
+            { id: "tp-atr294c", name: "ATR294C", brand: "ToupTek", type: "Deep Sky (Cooled)", sensor: "Sony IMX294 (Color)", resolution: "4144 x 2822 (11.7 MP)", pixelSize: "4.63 µm", sensorSize: "4/3 inch", qe: "75%", adc: "14-bit", readNoise: "1.2 - 7.3e-", cooling: "TEC -35°C", priceTier: "$" },
+            { id: "tp-ae676c", name: "AE676C", brand: "ToupTek", type: "Planetary", sensor: "Sony IMX676 (Color)", resolution: "3536 x 3536 (12.5 MP)", pixelSize: "2.0 µm", sensorSize: "1/1.6 inch Square", qe: "85%", adc: "12-bit", readNoise: "0.8e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "tp-g3m664c", name: "G3M664C", brand: "ToupTek", type: "Planetary", sensor: "Sony IMX664 (Color)", resolution: "2712 x 1538 (4.1 MP)", pixelSize: "2.9 µm", sensorSize: "1/1.8 inch", qe: "91%", adc: "12-bit", readNoise: "0.8e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "tp-g3m462c", name: "G3M462C", brand: "ToupTek", type: "Planetary", sensor: "Sony IMX462 (Color)", resolution: "1936 x 1096 (2.1 MP)", pixelSize: "2.9 µm", sensorSize: "1/2.8 inch", qe: "89%", adc: "12-bit", readNoise: "0.56e-", cooling: "Uncooled", priceTier: "Budget" },
+            { id: "tp-gpm662c", name: "GPM662C Guide", brand: "ToupTek", type: "Guide Cam", sensor: "Sony IMX662 (Color)", resolution: "1920 x 1080 (2.0 MP)", pixelSize: "2.9 µm", sensorSize: "1/2.8 inch", qe: "91%", adc: "12-bit", readNoise: "0.8e-", cooling: "Uncooled", priceTier: "Budget" }
+        ];
+
+        function App() {
+            const [searchTerm, setSearchTerm] = useState("");
+            const [selectedBrand, setSelectedBrand] = useState("All");
+            const [selectedType, setSelectedType] = useState("All");
+            const [compareList, setCompareList] = useState([]);
+            const [isModalOpen, setIsModalOpen] = useState(false);
+
+            const filteredCameras = useMemo(() => {
+                return cameraDatabase.filter(cam => {
+                    const matchSearch = cam.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                        cam.sensor.toLowerCase().includes(searchTerm.toLowerCase());
+                    const matchBrand = selectedBrand === "All" || cam.brand === selectedBrand;
+                    const matchType = selectedType === "All" || cam.type === selectedType;
+                    return matchSearch && matchBrand && matchType;
+                });
+            }, [searchTerm, selectedBrand, selectedType]);
+
+            const toggleCompare = (camId) => {
+                if (compareList.includes(camId)) {
+                    setCompareList(compareList.filter(id => id !== camId));
+                } else {
+                    if (compareList.length >= 3) {
+                        alert("Maksimal perbandingan adalah 3 kamera sekaligus!");
+                        return;
+                    }
+                    setCompareList([...compareList, camId]);
+                }
+            };
+
+            const brands = ["All", "ZWO", "Player One", "Svbony", "QHYCCD", "ToupTek"];
+            const types = ["All", "Deep Sky (Cooled)", "Planetary", "Guide Cam"];
+
+            return (
+                <div className="min-h-screen bg-dark-900 text-gray-100 flex flex-col font-sans">
+                    <header className="border-b border-dark-700 bg-dark-800/60 backdrop-blur sticky top-0 z-40">
+                        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/30">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold tracking-tight text-white">AstroCam Compare</h1>
+                                    <p className="text-xs text-gray-400">Database & Perbandingan Kamera Astronomi Profesional (Total: {cameraDatabase.length} Kamera)</p>
+                                </div>
+                            </div>
+
+                            {compareList.length > 0 && (
+                                <button 
+                                    onClick={() => setIsModalOpen(true)}
+                                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center gap-2 text-sm animate-pulse"
+                                >
+                                    <span>Bandingkan Kamera ({compareList.length}/3)</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                            )}
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto px-4 py-8 flex-grow w-full">
+                        <div className="bg-dark-800 p-4 sm:p-6 rounded-2xl border border-dark-700 shadow-xl mb-8 flex flex-col gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                    </span>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Cari kamera atau sensor (cth: IMX571, ZWO, ToupTek)..." 
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-gray-200 placeholder-gray-500"
+                                    />
+                                </div>
+
+                                <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+                                    {brands.map(brand => (
+                                        <button
+                                            key={brand}
+                                            onClick={() => setSelectedBrand(brand)}
+                                            className={`px-3.5 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition ${selectedBrand === brand ? 'bg-indigo-600 text-white shadow' : 'bg-dark-900 text-gray-400 hover:text-white border border-dark-700'}`}
+                                        >
+                                            {brand}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 justify-start md:justify-end">
+                                    {types.map(type => (
+                                        <button
+                                            key={type}
+                                            onClick={() => setSelectedType(type)}
+                                            className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition ${selectedType === type ? 'bg-emerald-600 text-white shadow' : 'bg-dark-900 text-gray-400 hover:text-white border border-dark-700'}`}
+                                        >
+                                            {type}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredCameras.map(cam => {
+                                const isCompared = compareList.includes(cam.id);
+                                return (
+                                    <div key={cam.id} className="bg-dark-800 border border-dark-700 rounded-2xl p-5 flex flex-col justify-between shadow-lg hover:border-indigo-500/50 transition group">
+                                        <div>
+                                            <div className="flex justify-between items-start gap-2 mb-3">
+                                                <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-indigo-950 text-indigo-300 border border-indigo-800/50">
+                                                    {cam.brand}
+                                                </span>
+                                                <span className={`text-xs px-2.5 py-1 rounded-md border ${
+                                                    cam.type.includes('Cooled') ? 'bg-blue-950 text-blue-300 border-blue-800/50' :
+                                                    cam.type.includes('Planetary') ? 'bg-amber-950 text-amber-300 border-amber-800/50' :
+                                                    'bg-purple-950 text-purple-300 border-purple-800/50'
+                                                }`}>
+                                                    {cam.type}
+                                                </span>
+                                            </div>
+
+                                            <h3 className="text-lg font-bold text-white mb-1 group-hover:text-indigo-400 transition">{cam.name}</h3>
+                                            <p className="text-xs text-indigo-300 font-mono mb-4">{cam.sensor}</p>
+
+                                            <div className="space-y-2 text-xs border-t border-dark-700 pt-3 text-gray-300">
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">Resolusi:</span>
+                                                    <span className="font-medium text-gray-200">{cam.resolution}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">Ukuran Pixel:</span>
+                                                    <span className="font-medium text-gray-200">{cam.pixelSize}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">Format Sensor:</span>
+                                                    <span className="font-medium text-gray-200">{cam.sensorSize}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">QE (Sensitivitas):</span>
+                                                    <span className="font-medium text-emerald-400">{cam.qe}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-400">Pendingin:</span>
+                                                    <span className="font-medium text-gray-200">{cam.cooling}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-6 pt-3 border-t border-dark-700">
+                                            <button
+                                                onClick={() => toggleCompare(cam.id)}
+                                                className={`w-full py-2.5 px-4 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 ${
+                                                    isCompared 
+                                                    ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20' 
+                                                    : 'bg-dark-900 text-gray-300 border border-dark-700 hover:border-indigo-500 hover:text-white'
+                                                }`}
+                                            >
+                                                {isCompared ? 'Hapus dari Perbandingan' : 'Tambah untuk Perbandingan'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </main>
+
+                    {isModalOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+                            <div className="bg-dark-800 border border-dark-700 w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                                <div className="flex justify-between items-center p-6 border-b border-dark-700">
+                                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                        <span>Matriks Perbandingan Kamera</span>
+                                        <span className="text-xs bg-indigo-600 px-2 py-0.5 rounded-full text-white">{compareList.length} Dipilih</span>
+                                    </h2>
+                                    <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white bg-dark-900 p-2 rounded-xl border border-dark-700">✕</button>
+                                </div>
+
+                                <div className="p-6 overflow-x-auto flex-grow">
+                                    <div className="min-w-[600px] grid grid-cols-4 gap-4">
+                                        <div className="space-y-4 font-semibold text-xs text-gray-400 pt-28">
+                                            <div className="py-2 border-b border-dark-700">Brand</div>
+                                            <div className="py-2 border-b border-dark-700">Kategori Tipe</div>
+                                            <div className="py-2 border-b border-dark-700">Sensor</div>
+                                            <div className="py-2 border-b border-dark-700">Resolusi</div>
+                                            <div className="py-2 border-b border-dark-700">Ukuran Pixel</div>
+                                            <div className="py-2 border-b border-dark-700">Format Sensor</div>
+                                            <div className="py-2 border-b border-dark-700">QE (Sensitivitas)</div>
+                                            <div className="py-2 border-b border-dark-700">Konversi ADC</div>
+                                            <div className="py-2 border-b border-dark-700">Read Noise</div>
+                                            <div className="py-2 border-b border-dark-700">Sistem Pendingin</div>
+                                        </div>
+
+                                        {compareList.map(id => {
+                                            const cam = cameraDatabase.find(c => c.id === id);
+                                            return (
+                                                <div key={cam.id} className="bg-dark-900 p-4 rounded-xl border border-dark-700 flex flex-col justify-between space-y-4 relative">
+                                                    <button onClick={() => toggleCompare(cam.id)} className="absolute top-2 right-2 text-rose-400 hover:text-rose-300 text-xs bg-rose-500/10 px-2 py-1 rounded">Hapus</button>
+                                                    <div className="h-24 flex flex-col justify-end">
+                                                        <span className="text-[10px] text-indigo-400 font-semibold">{cam.brand}</span>
+                                                        <h4 className="text-sm font-bold text-white leading-snug">{cam.name}</h4>
+                                                    </div>
+                                                    <div className="space-y-4 text-xs text-gray-300 pt-2">
+                                                        <div className="py-2 border-b border-dark-800 font-medium">{cam.brand}</div>
+                                                        <div className="py-2 border-b border-dark-800">{cam.type}</div>
+                                                        <div className="py-2 border-b border-dark-800 text-indigo-300">{cam.sensor}</div>
+                                                        <div className="py-2 border-b border-dark-800">{cam.resolution}</div>
+                                                        <div className="py-2 border-b border-dark-800">{cam.pixelSize}</div>
+                                                        <div className="py-2 border-b border-dark-800">{cam.sensorSize}</div>
+                                                        <div className="py-2 border-b border-dark-800 text-emerald-400 font-semibold">{cam.qe}</div>
+                                                        <div className="py-2 border-b border-dark-800">{cam.adc}</div>
+                                                        <div className="py-2 border-b border-dark-800">{cam.readNoise}</div>
+                                                        <div className="py-2 border-b border-dark-800">{cam.cooling}</div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <footer className="border-t border-dark-700 bg-dark-800/40 py-6 text-center text-xs text-gray-500">
+                        <p>© 2026 AstroCam Compare. Seluruh hak cipta dilindungi.</p>
+                    </footer>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(getElementByIdSafe('root')).render(<App />);
+        function getElementByIdSafe(id) { return document.getElementById(id); }
+    </script>
+</body>
+</html>
